@@ -17,6 +17,8 @@ return new class extends Migration
             $table->timestamps();
             $table->text( column: 'content')->nullable();
             $table->string('status')->default('en attent');
+            // departement_id
+            $table->foreignId('departement_id')->constrained('departements');
             $table->foreignId('user_id')->constrained();
         });
     }
