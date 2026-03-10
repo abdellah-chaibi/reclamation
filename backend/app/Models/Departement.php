@@ -9,4 +9,12 @@ class Departement extends Model
 {
     /** @use HasFactory<\Database\Factories\DepartementFactory> */
     use HasFactory;
+
+
+
+
+    agents 
+    chef departement 
+    Reclamations 
+    
 }

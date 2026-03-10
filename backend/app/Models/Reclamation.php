@@ -9,4 +9,11 @@ class Reclamation extends Model
 {
     /** @use HasFactory<\Database\Factories\ReclamationFactory> */
     use HasFactory;
+
+
+
+    user 
+
+    departement 
+    medias
 }

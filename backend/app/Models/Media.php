@@ -9,4 +9,8 @@ class Media extends Model
 {
     /** @use HasFactory<\Database\Factories\MediaFactory> */
     use HasFactory;
+
+
+
+    Reclamation
 }
