@@ -13,23 +13,18 @@ class ReclamationController extends Controller
      */
     public function index()
     {
-        //
+        $reclamation = Reclamation::all();
+        return response()->json($reclamation);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+ 
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(StoreReclamationRequest $request)
     {
-        //
+    $reclamation = Reclamation::create($request->validated());
     }
 
     /**
@@ -37,16 +32,10 @@ class ReclamationController extends Controller
      */
     public function show(Reclamation $reclamation)
     {
-        //
+        return response()->json($reclamation);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Reclamation $reclamation)
-    {
-        //
-    }
+   
 
     /**
      * Update the specified resource in storage.

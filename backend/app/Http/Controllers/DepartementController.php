@@ -13,7 +13,7 @@ class DepartementController extends Controller
      */
     public function index()
     {
-        //
+        $departements = Departement::paginate(14);
     }
 
     /**

@@ -10,7 +10,14 @@ class Media extends Model
     /** @use HasFactory<\Database\Factories\MediaFactory> */
     use HasFactory;
 
+    protected $fillable = [
+        'filename',
+        'path',
+        'reclamation_id'
+    ];
 
-
-    Reclamation
+    public function reclamation()
+    {
+        return $this->belongsTo(Reclamation::class);
+    }
 }
