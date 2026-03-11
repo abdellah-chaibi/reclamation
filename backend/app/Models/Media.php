@@ -11,7 +11,7 @@ class Media extends Model
     use HasFactory;
 
     protected $fillable = [
-        'filename',
+        'name',
         'path',
         'reclamation_id'
     ];
