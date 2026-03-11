@@ -16,20 +16,15 @@ class DepartementController extends Controller
         $departements = Departement::paginate(14);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(StoreDepartementRequest $request)
     {
-        //
+        $departement = Departement::create($request->validated());
+        return response()->json($departement, 201);
     }
 
     /**
@@ -37,23 +32,17 @@ class DepartementController extends Controller
      */
     public function show(Departement $departement)
     {
-        //
+        return response()->json($departement);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Departement $departement)
-    {
-        //
-    }
 
     /**
      * Update the specified resource in storage.
      */
     public function update(UpdateDepartementRequest $request, Departement $departement)
     {
-        //
+        $departement->update($request->validated());
+        return response()->json($departement);
     }
 
     /**
@@ -61,6 +50,9 @@ class DepartementController extends Controller
      */
     public function destroy(Departement $departement)
     {
-        //
+        $departement->delete();
+        return response()->json([
+            'message' => 'Departement deleted'
+        ]);
     }
 }
