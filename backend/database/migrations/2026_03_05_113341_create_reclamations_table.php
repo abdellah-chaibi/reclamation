@@ -14,8 +14,10 @@ return new class extends Migration
         Schema::create('reclamations', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->text( column: 'content')->nullable();
-            $table->string('status')->default('en attent');
+            $table->text(column: 'content')->nullable();
+            $table->string('status')->default('en_attent');
+            $table->decimal('latitude', 10, 8);
+            $table->decimal('longitude', 11, 8);
             // departement_id
             $table->foreignId('departement_id')->constrained('departements');
             $table->foreignId('user_id')->constrained();

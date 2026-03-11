@@ -13,7 +13,7 @@ class ReclamationController extends Controller
      */
     public function index()
     {
-        $reclamation = Reclamation::all();
+        $reclamation = Reclamation::paginate(15);
         return response()->json($reclamation);
     }
 
@@ -42,14 +42,15 @@ class ReclamationController extends Controller
      */
     public function update(UpdateReclamationRequest $request, Reclamation $reclamation)
     {
-        //
+        $reclamation->update($request->validated());
+        return response()->json($reclamation);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Reclamation $reclamation)
+    /*public function destroy(Reclamation $reclamation)
     {
-        //
-    }
+        $reclamation->
+    }*/
 }

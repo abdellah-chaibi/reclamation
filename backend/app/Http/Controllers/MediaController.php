@@ -13,23 +13,18 @@ class MediaController extends Controller
      */
     public function index()
     {
-        //
+        $media = Media::paginate(15);
+        return response()->json($media);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(StoreMediaRequest $request)
     {
-        //
+        $media = Media::create($request->validated());
+        return response()->json($media, 201);
     }
 
     /**
@@ -37,15 +32,7 @@ class MediaController extends Controller
      */
     public function show(Media $media)
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Media $media)
-    {
-        //
+        return response()->json($media);
     }
 
     /**
@@ -53,7 +40,8 @@ class MediaController extends Controller
      */
     public function update(UpdateMediaRequest $request, Media $media)
     {
-        //
+        $media->update($request->validated());
+        return response()->json($media);
     }
 
     /**
@@ -61,6 +49,9 @@ class MediaController extends Controller
      */
     public function destroy(Media $media)
     {
-        //
+        $media->delete();
+        return response()->json([
+            'message' => 'Media deleted'
+        ]);
     }
 }
