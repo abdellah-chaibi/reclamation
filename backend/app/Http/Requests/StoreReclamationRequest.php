@@ -22,7 +22,13 @@ class StoreReclamationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "role_id" => "required|exists:roles,id",
+            "title" => "required|string|max:255",
+            "content" => "required|string",
+            "latitude" => "required|numeric",
+            "longitude" => "required|numeric",
+            "user_id" => "required|exists:users,id",
+            "departement_id" => "required|exists:departements,id",
+            
         ];
     }
 }

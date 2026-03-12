@@ -25,6 +25,19 @@ class ReclamationController extends Controller
     public function store(StoreReclamationRequest $request)
     {
     $reclamation = Reclamation::create($request->validated());
+
+    if($request->hasFile('media')) {
+        foreach ($request->file('media') as $file) {
+            $path = $file->store('media', 'public');
+            $reclamation->media()->create([
+                'name' => $file->getClientOriginalName(),
+                'path' => $path,
+                'size' => $file->getSize(),
+            ]);
+        }
+
+        return response()->json($reclamation->load('media'), 201);
+    }
     }
 
     /**
@@ -42,7 +55,16 @@ class ReclamationController extends Controller
      */
     public function update(UpdateReclamationRequest $request, Reclamation $reclamation)
     {
-        $reclamation->update($request->validated());
+        $data=$request->validated();
+
+        if ($request->user()->role==='admin') {
+            unset( $data['status'] ) ;
+
+        }elseif ($request->user()->role==='chef_departement' || $request->user()->role==='employe') {
+            unset( $data['departement_id'] ) ;
+        }
+
+        $reclamation->update();
         return response()->json($reclamation);
     }
 

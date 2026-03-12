@@ -15,7 +15,7 @@ class AuthController extends Controller
             'password'=> 'required|string|min:8|confirmed',
             'cin'=>'string|max:8',
         ]);
-        return $validated;
+        
     
         $user = User:: create($validated);
 

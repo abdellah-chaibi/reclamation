@@ -11,7 +11,7 @@ class UpdateMediaRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,10 @@ class UpdateMediaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'name' => 'sometimes|required|string|max:255',
+            'path' => 'sometimes|required|string|max:255',
+            'size' => 'sometimes|required|numeric',
+            'reclamation_id' => 'sometimes|required|exists:reclamations,id',
         ];
     }
 }

@@ -14,6 +14,7 @@ class DepartementController extends Controller
     public function index()
     {
         $departements = Departement::paginate(14);
+        return response()->json($departements);
     }
 
 
@@ -36,12 +37,17 @@ class DepartementController extends Controller
     }
 
 
+
+
     /**
      * Update the specified resource in storage.
      */
     public function update(UpdateDepartementRequest $request, Departement $departement)
     {
+
+
         $departement->update($request->validated());
+
         return response()->json($departement);
     }
 

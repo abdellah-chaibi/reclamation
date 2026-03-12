@@ -11,7 +11,7 @@ class UpdateReclamationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,8 @@ class UpdateReclamationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'status' => 'nullable|in:en_cours,terminee,refusee',
+            'departement_id' => 'nullable|exists:departements,id',
         ];
     }
 }
