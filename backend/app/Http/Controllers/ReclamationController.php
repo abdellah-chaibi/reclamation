@@ -22,23 +22,27 @@ class ReclamationController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreReclamationRequest $request)
-    {
+  public function store(StoreReclamationRequest $request)
+{
+    // Create the reclamation
     $reclamation = Reclamation::create($request->validated());
 
-    if($request->hasFile('media')) {
-        foreach ($request->file('media') as $file) {
-            $path = $file->store('media', 'public');
-            $reclamation->media()->create([
+    // Handle media files if present
+    if ($request->hasFile('media')) {
+        $mediaData = collect($request->file('media'))->map(function ($file) {
+            return [
                 'name' => $file->getClientOriginalName(),
-                'path' => $path,
+                'path' => $file->store('media', 'public'),
                 'size' => $file->getSize(),
-            ]);
-        }
+            ];
+        });
 
-        return response()->json($reclamation->load('media'), 201);
+        $reclamation->media()->createMany($mediaData->toArray());
     }
-    }
+
+    // Return the created reclamation with media loaded
+    return response()->json($reclamation->load('media'), 201);
+}
 
     /**
      * Display the specified resource.
