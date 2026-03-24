@@ -10,22 +10,24 @@ class AuthController extends Controller
 {
     public function register(Request $request){
         $validated=$request->validate([
-            'name'=> 'required|string|max:255',
-            'email'=> 'required|string|email|max:255|unique:users',
-            'password'=> 'required|string|min:8|confirmed',
-            'cin'=>'string|max:8',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'cin'      => 'nullable|string|max:8',
         ]);
-        
-    
-        $user = User:: create($validated);
+
+        // Self-registered users are always citizens
+        $validated['role'] = 'citoyen';
+
+        $user = User::create($validated);
 
          $token = $user->createToken('auth_token')->plainTextToken;
 
          return response()->json([
-            'message'=>'user register successfully',
-            'user'=>$user,
-            'token'=>$token,
-         ],201);
+            'message' => 'User registered successfully',
+            'user'    => $user,
+            'token'   => $token,
+         ], 201);
     }
 
 

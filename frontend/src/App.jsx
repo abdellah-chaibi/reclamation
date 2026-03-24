@@ -1,35 +1,76 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 
-function App() {
-  const [count, setCount] = useState(0)
+import Navbar          from './components/Navbar';
+import ProtectedRoute  from './components/ProtectedRoute';
+import RoleRoute       from './components/RoleRoute';
+import LoadingSpinner  from './components/LoadingSpinner';
+
+import Welcome          from './pages/Welcome';
+import Login            from './pages/Login';
+import Register         from './pages/Register';
+import Home             from './pages/Home';
+import About            from './pages/About';
+import Profile          from './pages/Profile';
+import ReclamationPage  from './pages/ReclamationPage';
+import AdminDashboard   from './pages/admin/AdminDashboard';
+import ChefDashboard    from './pages/chef/ChefDashboard';
+import EmployeeDashboard from './pages/employee/EmployeeDashboard';
+
+import './App.css';
+
+export default function App() {
+  const { user, loading } = useAuth();
+
+  if (loading) return <LoadingSpinner fullPage />;
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+      {/* Show navbar only when authenticated */}
+      {user && <Navbar />}
 
-export default App
+      <Routes>
+        {/* Public routes */}
+        <Route path="/"         element={user ? <Navigate to="/home" replace /> : <Welcome />} />
+        <Route path="/login"    element={user ? <Navigate to="/home" replace /> : <Login />} />
+        <Route path="/register" element={user ? <Navigate to="/home" replace /> : <Register />} />
+
+        {/* Shared protected routes */}
+        <Route path="/home"    element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/about"   element={<ProtectedRoute><About /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+        {/* Citoyen */}
+        <Route path="/reclamations" element={
+          <RoleRoute roles={['citoyen', 'admin']}>
+            <ReclamationPage />
+          </RoleRoute>
+        } />
+
+        {/* Admin */}
+        <Route path="/admin/*" element={
+          <RoleRoute roles={['admin']}>
+            <AdminDashboard />
+          </RoleRoute>
+        } />
+
+        {/* Chef Service */}
+        <Route path="/chef" element={
+          <RoleRoute roles={['chef_dep', 'admin']}>
+            <ChefDashboard />
+          </RoleRoute>
+        } />
+
+        {/* Employee */}
+        <Route path="/employee" element={
+          <RoleRoute roles={['employe', 'admin']}>
+            <EmployeeDashboard />
+          </RoleRoute>
+        } />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to={user ? '/home' : '/'} replace />} />
+      </Routes>
+    </>
+  );
+}
