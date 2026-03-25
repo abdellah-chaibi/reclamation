@@ -3,6 +3,17 @@ import { useAuth } from '../../context/AuthContext';
 import { reclamationService } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix Leaflet's default icon path issues with Webpack/Vite
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
@@ -18,10 +29,9 @@ export default function EmployeeDashboard() {
     try {
       const res = await reclamationService.getAll();
       const r = res.data?.data || res.data || [];
-      // Show reclamations in employee's department that are assigned to them
       const myDeptId = user?.departement_id;
       setRecs(Array.isArray(r) ? r.filter(x => x.departement_id === myDeptId) : []);
-    } catch { setError('Failed to load assigned reclamations.'); }
+    } catch { setError('Échec du chargement des tâches assignées.'); }
     finally { setLoading(false); }
   };
 
@@ -31,22 +41,22 @@ export default function EmployeeDashboard() {
     setSaving(true); setError(''); setSuccess('');
     try {
       await reclamationService.update(id, { status: newStatus });
-      setSuccess(`Status updated to "${newStatus}".`);
+      setSuccess(`Statut mis à jour avec succès.`);
       setUpdatingId(null); fetchAll();
     } catch (err) {
-      setError(err?.response?.data?.message || 'Failed to update status.');
+      setError(err?.response?.data?.message || 'Échec de la mise à jour du statut.');
     } finally { setSaving(false); }
   };
 
   const todo    = recs.filter(r => r.status === 'en_attent' || r.status === 'en_cours');
-  const resolved = recs.filter(r => r.status === 'traite' || r.status === 'rejete');
+  const resolved = recs.filter(r => r.status === 'terminee' || r.status === 'rejete');
 
   return (
     <div className="page-wrapper fade-up">
       <div className="section-header">
-        <h2 className="section-title">🔧 My Assigned Tasks</h2>
+        <h2 className="section-title">🔧 Mes Tâches Assignées</h2>
         <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-          {recs.length} reclamation(s) in your department
+          {recs.length} réclamation(s) dans votre département
         </span>
       </div>
 
@@ -54,11 +64,11 @@ export default function EmployeeDashboard() {
       <div className="grid-2" style={{ marginBottom: '2rem' }}>
         <div className="stat-card">
           <div className="stat-icon stat-icon-warning">📋</div>
-          <div><div className="stat-number">{todo.length}</div><div className="stat-label">To Handle</div></div>
+          <div><div className="stat-number">{todo.length}</div><div className="stat-label">À traiter</div></div>
         </div>
         <div className="stat-card">
           <div className="stat-icon stat-icon-success">✅</div>
-          <div><div className="stat-number">{resolved.length}</div><div className="stat-label">Resolved</div></div>
+          <div><div className="stat-number">{resolved.length}</div><div className="stat-label">Résolues</div></div>
         </div>
       </div>
 
@@ -69,8 +79,8 @@ export default function EmployeeDashboard() {
         recs.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">🎉</div>
-            <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-muted)' }}>All clear!</h3>
-            <p>No reclamations in your department currently.</p>
+            <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Tout est clair !</h3>
+            <p>Aucune réclamation dans votre département pour le moment.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -78,33 +88,75 @@ export default function EmployeeDashboard() {
               <div key={r.id} className="card card-sm">
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
-                      <span style={{ fontWeight: 700 }}>{r.title}</span>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
+                      <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{r.title}</span>
                       <StatusBadge status={r.status} />
                     </div>
-                    {r.content && <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem', lineHeight: 1.5 }}>{r.content}</p>}
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                      <span>📅 {new Date(r.created_at).toLocaleDateString()}</span>
-                      {r.latitude && <span>📍 {r.latitude}, {r.longitude}</span>}
+                    {r.content && <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.5 }}>{r.content}</p>}
+                    
+                    {/* Media Attachments */}
+                    {r.medias && r.medias.length > 0 && (
+                      <div style={{ marginBottom: '1rem' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-subtle)', display: 'block', marginBottom: '0.5rem' }}>Pièces jointes :</span>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          {r.medias.map(m => (
+                            <a 
+                              key={m.id} 
+                              href={`http://localhost:8000/storage/${m.path}`} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="btn btn-sm btn-ghost" 
+                              style={{ border: '1px solid var(--border)', background: 'var(--surface-50)' }}
+                            >
+                              📎 Voir le document
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Leaflet Map Integration */}
+                    {r.latitude && r.longitude && (
+                      <div style={{ marginBottom: '1rem', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                        <MapContainer 
+                          center={[parseFloat(r.latitude), parseFloat(r.longitude)]} 
+                          zoom={14} 
+                          style={{ height: '200px', width: '100%' }}
+                          scrollWheelZoom={false}
+                        >
+                          <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          />
+                          <Marker position={[parseFloat(r.latitude), parseFloat(r.longitude)]}>
+                            <Popup>{r.title}</Popup>
+                          </Marker>
+                        </MapContainer>
+                      </div>
+                    )}
+
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                      <span>📅 Déposé le : {new Date(r.created_at).toLocaleDateString('fr-FR')}</span>
                     </div>
                   </div>
+                  
                   {r.status !== 'traite' && r.status !== 'rejete' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '130px' }}>
                       <button
-                        className="btn btn-success btn-sm"
-                        onClick={() => handleStatusUpdate(r.id, 'traite')}
-                        disabled={saving}
-                        title="Mark as done"
-                      >
-                        ✅ Done
-                      </button>
-                      <button
-                        className="btn btn-secondary btn-sm"
+                        className="btn btn-primary btn-sm"
                         onClick={() => handleStatusUpdate(r.id, 'en_cours')}
                         disabled={saving || r.status === 'en_cours'}
-                        title="Mark as in progress"
+                        style={{ width: '100%' }}
                       >
-                        🔄 In Progress
+                        🔄 En Cours
+                      </button>
+                      <button
+                        className="btn btn-success btn-sm"
+                        onClick={() => handleStatusUpdate(r.id, 'terminee')}
+                        disabled={saving}
+                        style={{ width: '100%' }}
+                      >
+                        ✅ Traitée
                       </button>
                     </div>
                   )}

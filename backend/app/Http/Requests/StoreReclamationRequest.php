@@ -28,7 +28,9 @@ class StoreReclamationRequest extends FormRequest
             "longitude" => "required|numeric",
             "user_id" => "required|exists:users,id",
             "departement_id" => "required|exists:departements,id",
-            
+            "media" => "nullable|array",
+            "media.*" => "file|max:10240",
+            "assigned_to" => "nullable|exists:users,id",
         ];
     }
 }

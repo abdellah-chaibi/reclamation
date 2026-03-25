@@ -19,8 +19,9 @@ class UserController extends Controller
             'name' => 'required',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
-            'departement_id' => 'required|exists:departements,id',
-            'cin' => 'unique:users',
+            'role' => 'nullable|string',
+            'departement_id' => 'required_unless:role,citoyen|nullable|exists:departements,id',
+            'cin' => 'nullable|unique:users',
         ]);
 
         $user = User::create([

@@ -37,11 +37,11 @@ class ReclamationController extends Controller
             ];
         });
 
-        $reclamation->media()->createMany($mediaData->toArray());
+        $reclamation->medias()->createMany($mediaData->toArray());
     }
 
     // Return the created reclamation with media loaded
-    return response()->json($reclamation->load('media'), 201);
+    return response()->json($reclamation->load('medias'), 201);
 }
 
     /**
@@ -64,11 +64,11 @@ class ReclamationController extends Controller
         if ($request->user()->role==='admin') {
             unset( $data['status'] ) ;
 
-        }elseif ($request->user()->role==='chef_departement' || $request->user()->role==='employe') {
+        }elseif ($request->user()->role==='chef_dep' || $request->user()->role==='employe') {
             unset( $data['departement_id'] ) ;
         }
 
-        $reclamation->update();
+        $reclamation->update($data);
         return response()->json($reclamation);
     }
 

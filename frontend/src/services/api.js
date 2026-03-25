@@ -45,6 +45,9 @@ export const reclamationService = {
   getMy:   (userId, params) => api.get('/reclamations', { params: { ...params, user_id: userId } }),
   getById: (id)           => api.get(`/reclamations/${id}`),
   create:  (data)         => api.post('/reclamations', data),
+  createWithMedia: (data) => api.post('/reclamations', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   update:  (id, data)     => api.put(`/reclamations/${id}`, data),
   delete:  (id)           => api.delete(`/reclamations/${id}`),
 };

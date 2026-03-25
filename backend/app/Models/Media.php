@@ -13,6 +13,7 @@ class Media extends Model
     protected $fillable = [
         'name',
         'path',
+        'size',
         'reclamation_id'
     ];
 

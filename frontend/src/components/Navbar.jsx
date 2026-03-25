@@ -4,32 +4,32 @@ import { useAuth } from '../context/AuthContext';
 
 const roleLinks = {
   citoyen: [
-    { to: '/home', label: 'Home', icon: '🏠' },
-    { to: '/about', label: 'About', icon: 'ℹ️' },
-    { to: '/reclamations', label: 'Reclamations', icon: '📋' },
-    { to: '/profile', label: 'Profile', icon: '👤' },
+    { to: '/home', label: 'Accueil', icon: '🏠' },
+    { to: '/about', label: 'À propos', icon: 'ℹ️' },
+    { to: '/reclamations', label: 'Mes Réclamations', icon: '📋' },
+    { to: '/profile', label: 'Profil', icon: '👤' },
   ],
   employe: [
-    { to: '/home', label: 'Home', icon: '🏠' },
-    { to: '/about', label: 'About', icon: 'ℹ️' },
-    { to: '/employee', label: 'My Tasks', icon: '🔧' },
-    { to: '/profile', label: 'Profile', icon: '👤' },
+    { to: '/home', label: 'Accueil', icon: '🏠' },
+    { to: '/about', label: 'À propos', icon: 'ℹ️' },
+    { to: '/employee', label: 'Mes Tâches', icon: '🔧' },
+    { to: '/profile', label: 'Profil', icon: '👤' },
   ],
   chef_dep: [
-    { to: '/home', label: 'Home', icon: '🏠' },
-    { to: '/about', label: 'About', icon: 'ℹ️' },
-    { to: '/chef', label: 'Dashboard', icon: '📊' },
-    { to: '/profile', label: 'Profile', icon: '👤' },
+    { to: '/home', label: 'Accueil', icon: '🏠' },
+    { to: '/about', label: 'À propos', icon: 'ℹ️' },
+    { to: '/chef', label: 'Tableau de Bord', icon: '📊' },
+    { to: '/profile', label: 'Profil', icon: '👤' },
   ],
   admin: [
-    { to: '/home', label: 'Home', icon: '🏠' },
-    { to: '/about', label: 'About', icon: 'ℹ️' },
-    { to: '/admin', label: 'Admin', icon: '⚙️' },
-    { to: '/profile', label: 'Profile', icon: '👤' },
+    { to: '/home', label: 'Accueil', icon: '🏠' },
+    { to: '/about', label: 'À propos', icon: 'ℹ️' },
+    { to: '/admin', label: 'Administration', icon: '⚙️' },
+    { to: '/profile', label: 'Profil', icon: '👤' },
   ],
 };
 
-const roleBadgeLabel = { admin: 'Admin', chef_dep: 'Chef Service', employe: 'Employee', citoyen: 'Citoyen' };
+const roleBadgeLabel = { admin: 'Admin', chef_dep: 'Chef de Service', employe: 'Employé', citoyen: 'Citoyen' };
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -76,7 +76,7 @@ export default function Navbar() {
           </span>
           <span className="navbar-username">{user?.name}</span>
           <button className="btn btn-ghost btn-sm" onClick={handleLogout}>
-            Sign out
+            Se déconnecter
           </button>
         </div>
 
@@ -106,7 +106,7 @@ export default function Navbar() {
             <span className={`badge badge-role-${user?.role}`}>{roleBadgeLabel[user?.role]}</span>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{user?.name}</span>
           </div>
-          <button className="btn btn-danger btn-sm" style={{ marginTop: '0.5rem' }} onClick={handleLogout}>Sign out</button>
+          <button className="btn btn-danger btn-sm" style={{ marginTop: '0.5rem' }} onClick={handleLogout}>Se déconnecter</button>
         </div>
       )}
     </nav>

@@ -10,38 +10,38 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 function AdminOverview({ stats }) {
   return (
     <div className="fade-up">
-      <h2 className="section-title" style={{ marginBottom: '1.5rem' }}>⚙️ Admin Overview</h2>
+      <h2 className="section-title" style={{ marginBottom: '1.5rem' }}>⚙️ Vue d'ensemble Admin</h2>
       <div className="grid-4" style={{ marginBottom: '2rem' }}>
         <div className="stat-card">
           <div className="stat-icon stat-icon-primary">👥</div>
-          <div><div className="stat-number">{stats.users}</div><div className="stat-label">Total Users</div></div>
+          <div><div className="stat-number">{stats.users}</div><div className="stat-label">Utilisateurs</div></div>
         </div>
         <div className="stat-card">
           <div className="stat-icon stat-icon-success">🏢</div>
-          <div><div className="stat-number">{stats.depts}</div><div className="stat-label">Departments</div></div>
+          <div><div className="stat-number">{stats.depts}</div><div className="stat-label">Départements</div></div>
         </div>
         <div className="stat-card">
           <div className="stat-icon stat-icon-warning">📋</div>
-          <div><div className="stat-number">{stats.recs}</div><div className="stat-label">Reclamations</div></div>
+          <div><div className="stat-number">{stats.recs}</div><div className="stat-label">Réclamations</div></div>
         </div>
         <div className="stat-card">
           <div className="stat-icon stat-icon-info">🔧</div>
-          <div><div className="stat-number">{stats.employees}</div><div className="stat-label">Employees</div></div>
+          <div><div className="stat-number">{stats.employees}</div><div className="stat-label">Employés</div></div>
         </div>
       </div>
       <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
-        <p>Use the sidebar to manage each section of the platform.</p>
+        <p>Utilisez la barre latérale pour gérer chaque section de la plateforme.</p>
       </div>
     </div>
   );
 }
 
 const navItems = [
-  { to: '/admin', label: 'Overview',     icon: '📊', end: true },
-  { to: '/admin/users', label: 'Users',  icon: '👥' },
-  { to: '/admin/departements', label: 'Departments', icon: '🏢' },
-  { to: '/admin/employees', label: 'Employees', icon: '🔧' },
-  { to: '/admin/reclamations', label: 'Reclamations', icon: '📋' },
+  { to: '/admin', label: 'Vue d\'ensemble', icon: '📊', end: true },
+  { to: '/admin/users', label: 'Utilisateurs', icon: '👥' },
+  { to: '/admin/departements', label: 'Départements', icon: '🏢' },
+  { to: '/admin/employees', label: 'Employés', icon: '🔧' },
+  { to: '/admin/reclamations', label: 'Réclamations', icon: '📋' },
 ];
 
 export default function AdminDashboard() {
@@ -68,7 +68,7 @@ export default function AdminDashboard() {
       {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="admin-sidebar-header">
-          <span>⚙️</span> Admin Panel
+          <span>⚙️</span> Panneau d'Administration
         </div>
         <nav className="admin-nav">
           {navItems.map(item => (
