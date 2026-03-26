@@ -13,17 +13,27 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  // ─── Re-hydrate on mount only (not on every token change) ─────────────────
-  useEffect(() => {
+  const refreshUser = useCallback(async () => {
     const token = localStorage.getItem('token');
-    if (token) {
-      authService.getCurrentUser()
-        .then((res) => setUser(res.data))
-        .catch(() => clearAuth())
-        .finally(() => setLoading(false));
-    } else {
+
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await authService.getCurrentUser();
+      setUser(res.data);
+    } catch (_) {
+      clearAuth();
+    } finally {
       setLoading(false);
     }
+  }, [clearAuth]);
+
+  // ─── Re-hydrate on mount only (not on every token change) ─────────────────
+  useEffect(() => {
+    refreshUser();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // ← run once on mount only
 
@@ -33,6 +43,12 @@ export function AuthProvider({ children }) {
     window.addEventListener('auth:logout', handle);
     return () => window.removeEventListener('auth:logout', handle);
   }, [clearAuth]);
+
+  useEffect(() => {
+    const handle = () => refreshUser();
+    window.addEventListener('auth:update', handle);
+    return () => window.removeEventListener('auth:update', handle);
+  }, [refreshUser]);
 
   // ─── Auth actions ──────────────────────────────────────────────────────────
   const login = async (credentials) => {

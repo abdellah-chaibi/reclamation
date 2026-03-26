@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ─── CSS Custom Properties ─────────────────────────────────────────────────── */
 :root {
   --primary:       #6366f1;
@@ -327,3 +331,4 @@ tbody tr:last-child td { border-bottom: none; }
 
 /* ─── Divider ────────────────────────────────────────────────────────────────── */
 .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+

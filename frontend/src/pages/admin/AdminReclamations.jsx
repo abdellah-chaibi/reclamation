@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { reclamationService, departementService } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { 
+  ClipboardList, Filter, Building2, Calendar, 
+  User, Check, X, RefreshCw, ChevronRight, AlertCircle 
+} from 'lucide-react';
 
 const STATUSES = [
   { value: 'en_attent', label: 'En Attente' },
@@ -36,8 +40,11 @@ export default function AdminReclamations() {
   const handleAssign = async (id) => {
     if (!editDept) return;
     setSaving(true);
-    try { await reclamationService.update(id, { departement_id: parseInt(editDept) }); setEditId(null); fetchAll(); }
-    catch { setError('Échec de la mise à jour du département.'); }
+    try { 
+      await reclamationService.update(id, { departement_id: parseInt(editDept) }); 
+      setEditId(null); 
+      fetchAll(); 
+    } catch { setError('Échec de la mise à jour du département.'); }
     finally { setSaving(false); }
   };
 
@@ -48,62 +55,137 @@ export default function AdminReclamations() {
   });
 
   return (
-    <div className="fade-up">
-      <div className="section-header">
-        <h2 className="section-title">📋 Toutes les Réclamations</h2>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <select className="form-control" style={{ width: 170 }} value={filter} onChange={(e) => setFilter(e.target.value)}>
-            <option value="">Tous les Statuts</option>
-            {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
-          <select className="form-control" style={{ width: 190 }} value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)}>
-            <option value="">Tous les Départements</option>
-            {depts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-          </select>
+    <div className="animate-in fade-in duration-500 pb-10">
+      {/* Header & Filters */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+            <ClipboardList className="text-blue-600" size={28} />
+            Gestion des Réclamations
+          </h2>
+          <p className="text-slate-500 text-sm font-medium">Suivi et distribution des requêtes citoyennes.</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 bg-white border border-slate-200 p-1 rounded-2xl shadow-sm">
+            <select 
+              className="bg-transparent px-3 py-1.5 outline-none text-xs font-bold text-slate-600 border-r border-slate-100"
+              value={filter} 
+              onChange={(e) => setFilter(e.target.value)}
+            >
+              <option value="">Tous les Statuts</option>
+              {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+            <select 
+              className="bg-transparent px-3 py-1.5 outline-none text-xs font-bold text-slate-600"
+              value={deptFilter} 
+              onChange={(e) => setDeptFilter(e.target.value)}
+            >
+              <option value="">Tous les Départements</option>
+              {depts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
-      {error && <div className="alert alert-error" style={{ marginBottom: '1rem' }}>{error}</div>}
-
-      {loading ? <LoadingSpinner /> : (
-        <div className="table-wrapper">
-          <table>
-            <thead><tr><th>#</th><th>Titre</th><th>Utilisateur</th><th>Département</th><th>Statut</th><th>Date</th><th>Assigner Dép.</th></tr></thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>Aucune réclamation trouvée.</td></tr>
-              ) : filtered.map(r => (
-                <tr key={r.id}>
-                  <td style={{ color: 'var(--text-muted)' }}>#{r.id}</td>
-                  <td><strong>{r.title}</strong></td>
-                  <td style={{ color: 'var(--text-muted)' }}>#{r.user_id}</td>
-                  <td style={{ color: 'var(--text-muted)' }}>
-                    {depts.find(d => d.id === r.departement_id)?.name || `#${r.departement_id}`}
-                  </td>
-                  <td><StatusBadge status={r.status} /></td>
-                  <td style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{new Date(r.created_at).toLocaleDateString('fr-FR')}</td>
-                  <td>
-                    {editId === r.id ? (
-                      <div style={{ display: 'flex', gap: '0.4rem' }}>
-                        <select className="form-control" style={{ width: 130, padding: '0.3rem' }} value={editDept} onChange={(e) => setEditDept(e.target.value)}>
-                          <option value="">— Sélectionner —</option>
-                          {depts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                        </select>
-                        <button className="btn btn-success btn-sm" onClick={() => handleAssign(r.id)} disabled={saving}>✓</button>
-                        <button className="btn btn-ghost btn-sm" onClick={() => setEditId(null)}>✕</button>
-                      </div>
-                    ) : (
-                      <button className="btn btn-secondary btn-sm" onClick={() => { setEditId(r.id); setEditDept(String(r.departement_id)); }}>
-                        Ré-assigner
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl flex items-center gap-3 text-red-700 font-bold animate-in slide-in-from-top-4">
+          <AlertCircle size={18} /> {error}
         </div>
       )}
+
+      {/* Main Table Card */}
+      <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        {loading ? (
+          <div className="py-20 flex justify-center"><LoadingSpinner /></div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-100">
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">ID</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Réclamation</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Citoyen & Dép.</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Statut</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-20 text-center text-slate-400 italic">Aucune réclamation trouvée.</td>
+                  </tr>
+                ) : filtered.map(r => (
+                  <tr key={r.id} className="hover:bg-slate-50/30 transition-colors">
+                    <td className="px-6 py-4 text-xs font-bold text-slate-400">#{r.id}</td>
+                    <td className="px-6 py-4">
+                      <div className="max-w-xs sm:max-w-md">
+                        <p className="font-bold text-slate-900 text-sm mb-1 truncate">{r.title}</p>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium uppercase">
+                          <Calendar size={12} />
+                          {new Date(r.created_at).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                          <User size={12} className="text-slate-300" /> ID #{r.user_id}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                          <Building2 size={12} />
+                          {depts.find(d => d.id === r.departement_id)?.name || 'Non assigné'}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <StatusBadge status={r.status} />
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {editId === r.id ? (
+                        <div className="flex items-center justify-end gap-1 animate-in zoom-in-95 duration-200">
+                          <select 
+                            className="text-[11px] font-bold px-2 py-1.5 bg-slate-100 border border-slate-200 rounded-lg outline-none focus:border-blue-400"
+                            value={editDept} 
+                            onChange={(e) => setEditDept(e.target.value)}
+                          >
+                            <option value="">Assigner...</option>
+                            {depts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                          </select>
+                          <button 
+                            className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            onClick={() => handleAssign(r.id)}
+                            disabled={saving}
+                          >
+                            {saving ? <RefreshCw className="animate-spin" size={14} /> : <Check size={14} />}
+                          </button>
+                          <button 
+                            className="p-1.5 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors"
+                            onClick={() => setEditId(null)}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          className="px-4 py-1.5 text-[11px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-600 hover:text-white transition-all"
+                          onClick={() => { setEditId(r.id); setEditDept(String(r.departement_id)); }}
+                        >
+                          Dépêcher
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      
+      <p className="mt-6 text-center text-slate-400 text-[11px] font-medium uppercase tracking-widest">
+        Fin de la liste — {filtered.length} réclamations
+      </p>
     </div>
   );
 }

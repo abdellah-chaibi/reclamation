@@ -1,346 +1,277 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { reclamationService, userService } from '../../services/api';
+import { reclamationService } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import Employes from './Employes';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import {
+  CheckCircle2, AlertCircle, ChevronDown,
+  MapPin, Paperclip, Calendar, Clock, Inbox, ExternalLink
+} from 'lucide-react';
 
-const STATUSES = [
-  { value: 'en_attent', label: 'En Attente' },
-  { value: 'en_cours',  label: 'En Cours' },
-  { value: 'traite',    label: 'Traitée' },
-  { value: 'rejete',    label: 'Rejetée' },
-];
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
-const emptyEmpForm = { name: '', email: '', password: '', role: 'employe', cin: '' };
+function groupReclamationsByDate(items) {
+  const sorted = [...items].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-export default function ChefDashboard() {
+  return sorted.reduce((groups, item) => {
+    const key = new Date(item.created_at).toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+
+    groups[key].push(item);
+    return groups;
+  }, {});
+}
+
+function ChefOverview() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('reclamations'); // 'reclamations' | 'employes'
-  
-  const [recs, setRecs]         = useState([]);
-  const [employees, setEmployees] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  
-  const [error, setError]       = useState('');
-  const [success, setSuccess]   = useState('');
-  
-  // Reclamation action state
-  const [actionRow, setActionRow] = useState(null);
-  const [assignEmpId, setAssignEmpId] = useState('');
-  const [updateStatus, setUpdateStatus] = useState('');
-  const [saving, setSaving]     = useState(false);
-
-  // Employee modal state
-  const [showEmpModal, setShowEmpModal] = useState(false);
-  const [showDelEmpModal, setShowDelEmpModal] = useState(false);
-  const [empForm, setEmpForm] = useState(emptyEmpForm);
-  const [editingEmpId, setEditingEmpId] = useState(null);
-  const [deletingEmpId, setDeletingEmpId] = useState(null);
-  const [empErrors, setEmpErrors] = useState({});
-  const [empSaving, setEmpSaving] = useState(false);
+  const [recs, setRecs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
 
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [rRes, uRes] = await Promise.all([reclamationService.getAll(), userService.getAll()]);
-      const r = rRes.data?.data || rRes.data || [];
+      const res = await reclamationService.getAll();
+      const all = res.data?.data || res.data || [];
       const myDeptId = user?.departement_id;
-      setRecs(Array.isArray(r) ? r.filter(x => x.departement_id === myDeptId) : []);
-      
-      const u = Array.isArray(uRes.data) ? uRes.data : (uRes.data?.data || []);
-      setEmployees(u.filter(x => x.role === 'employe' && x.departement_id === myDeptId));
-    } catch { setError('Échec du chargement des données.'); }
-    finally { setLoading(false); }
+      setRecs(Array.isArray(all) ? all.filter((item) => item.departement_id === myDeptId) : []);
+    } catch {
+      setError('Erreur de connexion au serveur.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchAll(); }, []);
-
-  // --- Reclamations Actions ---
-  const openAction = (rec) => {
-    setActionRow(rec.id);
-    setAssignEmpId(String(rec.assigned_to || ''));
-    setUpdateStatus(rec.status);
-    setError(''); setSuccess('');
-  };
-
-  const handleSaveRec = async (recId) => {
-    setSaving(true); setError(''); setSuccess('');
-    try {
-      const payload = {};
-      if (updateStatus) payload.status = updateStatus;
-      if (assignEmpId) payload.assigned_to = parseInt(assignEmpId);
-      await reclamationService.update(recId, payload);
-      setSuccess('Réclamation mise à jour avec succès.');
-      setActionRow(null); fetchAll();
-    } catch (err) {
-      setError(err?.response?.data?.message || 'Échec de la mise à jour de la réclamation.');
-    } finally { setSaving(false); }
-  };
-
-  // --- Employee Actions ---
-  const handleEmpChange = (e) => {
-    setEmpForm(p => ({ ...p, [e.target.name]: e.target.value }));
-    setEmpErrors(p => ({ ...p, [e.target.name]: '' }));
-  };
-
-  const openCreateEmp = () => {
-    setEmpForm(emptyEmpForm);
-    setEditingEmpId(null);
-    setEmpErrors({}); setError(''); setSuccess('');
-    setShowEmpModal(true);
-  };
-
-  const openEditEmp = (emp) => {
-    setEmpForm({
-      name: emp.name,
-      email: emp.email,
-      password: '',
-      role: 'employe',
-      cin: emp.cin || ''
-    });
-    setEditingEmpId(emp.id);
-    setEmpErrors({}); setError(''); setSuccess('');
-    setShowEmpModal(true);
-  };
-
-  const handleSaveEmp = async (e) => {
-    e.preventDefault();
-    setEmpSaving(true); setError(''); setSuccess('');
-    try {
-      const payload = { ...empForm, departement_id: user.departement_id };
-      if (editingEmpId && !payload.password) delete payload.password;
-
-      if (editingEmpId) {
-        await userService.update(editingEmpId, payload);
-        setSuccess('Employé mis à jour avec succès.');
-      } else {
-        await userService.create(payload);
-        setSuccess('Employé créé avec succès.');
-      }
-      setShowEmpModal(false);
+  useEffect(() => {
+    if (user?.departement_id) {
       fetchAll();
-    } catch (err) {
-      const msgs = err?.response?.data?.errors;
-      if (msgs) { 
-        const m = {}; Object.keys(msgs).forEach(k => m[k] = msgs[k][0]); setEmpErrors(m); 
-      }
-      else setError(err?.response?.data?.message || 'Échec de la sauvegarde de l\'employé.');
-    } finally { setEmpSaving(false); }
-  };
+    }
+  }, [user?.departement_id]);
 
-  const confirmDeleteEmp = async () => {
-    if (!deletingEmpId) return;
+  const handleStatusUpdate = async (e, id, newStatus) => {
+    e.stopPropagation();
+    setSaving(true);
     try {
-      await userService.delete(deletingEmpId);
-      setSuccess('Employé supprimé avec succès.');
-      setShowDelEmpModal(false);
+      await reclamationService.update(id, { status: newStatus });
+      setSuccess('Mission mise a jour.');
       fetchAll();
-    } catch { setError('Échec de la suppression de l\'employé.'); setShowDelEmpModal(false); }
+    } catch {
+      setError('Erreur lors du changement de statut.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // Stats
-  const pending = recs.filter(r => r.status === 'en_attent').length;
-  const inProg  = recs.filter(r => r.status === 'en_cours').length;
-  const done    = recs.filter(r => r.status === 'traite').length;
+  const todo = recs.filter((item) => ['en_attent', 'en_cours'].includes(item.status));
+  const resolved = recs.filter((item) => ['terminee', 'rejete'].includes(item.status));
+  const groupedRecs = groupReclamationsByDate(recs);
 
   return (
-    <div className="page-wrapper fade-up">
-      <div className="section-header">
-        <h2 className="section-title">📊 Tableau de Bord (Chef de Service)</h2>
-        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-          Dép : <strong>{user?.departement?.name || `#${user?.departement_id}`}</strong>
-        </span>
-      </div>
-
-      <div className="tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
-        <button 
-          className={`btn ${activeTab === 'reclamations' ? 'btn-primary' : 'btn-ghost'}`} 
-          onClick={() => { setActiveTab('reclamations'); setError(''); setSuccess(''); }}
-        >
-          📋 Réclamations du Département
-        </button>
-        <button 
-          className={`btn ${activeTab === 'employes' ? 'btn-primary' : 'btn-ghost'}`} 
-          onClick={() => { setActiveTab('employes'); setError(''); setSuccess(''); }}
-        >
-          👷 Gestion des Employés
-        </button>
-      </div>
-
-      {error   && <div className="alert alert-error"   style={{ marginBottom: '1rem' }}>{error}</div>}
-      {success && <div className="alert alert-success" style={{ marginBottom: '1rem' }}>{success}</div>}
-
-      {activeTab === 'reclamations' && (
-        <>
-          <div className="grid-3" style={{ marginBottom: '2rem' }}>
-            <div className="stat-card">
-              <div className="stat-icon stat-icon-warning">⏳</div>
-              <div><div className="stat-number">{pending}</div><div className="stat-label">En Attente</div></div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon stat-icon-info">🔄</div>
-              <div><div className="stat-number">{inProg}</div><div className="stat-label">En Cours</div></div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon stat-icon-success">✅</div>
-              <div><div className="stat-number">{done}</div><div className="stat-label">Traitées</div></div>
-            </div>
+    <div className="min-h-screen bg-slate-50/50 pb-20">
+      <div className="max-w-6xl mx-auto px-4 pt-10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
+          <div className="animate-in slide-in-from-left duration-700">
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Tableau de bord</h1>
+            <p className="text-slate-500 font-medium flex items-center gap-2 mt-1">
+              Espace {user?.departement?.name || 'Departement'} - {recs.length} total
+            </p>
           </div>
 
-          {loading ? <LoadingSpinner /> : (
-            recs.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-icon">📭</div>
-                <p>Aucune réclamation assignée à votre département pour le moment.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {recs.map(r => (
-                  <div key={r.id} className="card card-sm">
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
-                          <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>{r.title}</span>
-                          <StatusBadge status={r.status} />
-                        </div>
-                        {r.content && <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{r.content}</p>}
-                        
-                        {r.medias && r.medias.length > 0 && (
-                          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-                            {r.medias.map(m => (
-                              <a key={m.id} href={`http://localhost:8000/storage/${m.path}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-ghost" style={{ border: '1px solid var(--border)' }}>
-                                📎 Voir P.J.
-                              </a>
-                            ))}
-                          </div>
-                        )}
-
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                          <span>👤 Citoyen #{r.user_id}</span>
-                          <span>📅 Déposé le : {new Date(r.created_at).toLocaleDateString('fr-FR')}</span>
-                          {r.assigned_to && <span>👷 Assigné à : {employees.find(e => e.id === r.assigned_to)?.name || `#${r.assigned_to}`}</span>}
-                        </div>
-                      </div>
-                      <button className="btn btn-secondary btn-sm" onClick={() => actionRow === r.id ? setActionRow(null) : openAction(r)}>
-                        {actionRow === r.id ? '✕ Fermer' : '✏️ Gérer'}
-                      </button>
-                    </div>
-
-                    {actionRow === r.id && (
-                      <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                        <div className="form-group" style={{ minWidth: 200 }}>
-                          <label>Assigner à un Employé</label>
-                          <select className="form-control" value={assignEmpId} onChange={(e) => setAssignEmpId(e.target.value)}>
-                            <option value="">— Non Assigné —</option>
-                            {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                          </select>
-                        </div>
-                        <div className="form-group" style={{ minWidth: 160 }}>
-                          <label>Changer le Statut</label>
-                          <select className="form-control" value={updateStatus} onChange={(e) => setUpdateStatus(e.target.value)}>
-                            {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                          </select>
-                        </div>
-                        <button className="btn btn-primary btn-sm" onClick={() => handleSaveRec(r.id)} disabled={saving}>
-                          {saving ? 'Sauvegarde…' : '💾 Sauvegarder'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )
-          )}
-        </>
-      )}
-
-      {activeTab === 'employes' && (
-        <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <p style={{ color: 'var(--text-muted)' }}>Gérez les employés affectés à votre département.</p>
-            <button className="btn btn-primary btn-sm" onClick={openCreateEmp}>＋ Ajouter un Employé</button>
-          </div>
-
-          {loading ? <LoadingSpinner /> : (
-            employees.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-icon">👷</div>
-                <p>Aucun employé dans ce département.</p>
-              </div>
-            ) : (
-              <div className="table-wrapper">
-                <table>
-                  <thead>
-                    <tr><th>#</th><th>Nom</th><th>Email</th><th>Actions</th></tr>
-                  </thead>
-                  <tbody>
-                    {employees.map(emp => (
-                      <tr key={emp.id}>
-                        <td style={{ color: 'var(--text-muted)' }}>#{emp.id}</td>
-                        <td><strong>{emp.name}</strong></td>
-                        <td style={{ color: 'var(--text-muted)' }}>{emp.email}</td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button className="btn btn-secondary btn-sm" onClick={() => openEditEmp(emp)}>Modifier</button>
-                            <button className="btn btn-danger btn-sm" onClick={() => { setDeletingEmpId(emp.id); setShowDelEmpModal(true); }}>Supprimer</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-          )}
-
-          {/* Delete Employee Modal */}
-          {showDelEmpModal && (
-            <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && setShowDelEmpModal(false)}>
-              <div className="modal" style={{ maxWidth: 400 }}>
-                <div className="modal-header">
-                  <h3 className="modal-title">Confirmer la suppression</h3>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setShowDelEmpModal(false)}>✕</button>
-                </div>
-                <p style={{ marginBottom: '1.5rem', marginTop: '1rem' }}>Êtes-vous sûr de vouloir supprimer cet employé ?</p>
-                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                  <button className="btn btn-secondary" onClick={() => setShowDelEmpModal(false)}>Annuler</button>
-                  <button className="btn btn-danger" onClick={confirmDeleteEmp}>Supprimer</button>
-                </div>
+          <div className="flex gap-3 animate-in slide-in-from-right duration-700">
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm flex items-center gap-4 min-w-[160px]">
+              <div className="bg-amber-50 text-amber-600 p-3 rounded-xl"><Clock size={20} /></div>
+              <div>
+                <p className="text-2xl font-black text-slate-900">{todo.length}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">En cours</p>
               </div>
             </div>
-          )}
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm flex items-center gap-4 min-w-[160px]">
+              <div className="bg-emerald-50 text-emerald-600 p-3 rounded-xl"><CheckCircle2 size={20} /></div>
+              <div>
+                <p className="text-2xl font-black text-slate-900">{resolved.length}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Terminees</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-          {/* Create / Edit Employee Modal */}
-          {showEmpModal && (
-            <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && setShowEmpModal(false)}>
-              <div className="modal">
-                <div className="modal-header">
-                  <h3 className="modal-title">{editingEmpId ? 'Modifier l\'employé' : 'Ajouter un employé'}</h3>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setShowEmpModal(false)}>✕</button>
+        {(success || error) && (
+          <div className={`mb-6 p-4 rounded-2xl flex items-center gap-3 animate-in fade-in zoom-in-95 font-bold text-sm shadow-sm ${success ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
+            {success ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+            {success || error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <LoadingSpinner />
+            <p className="text-slate-400 font-bold animate-pulse">Synchronisation des donnees...</p>
+          </div>
+        ) : recs.length === 0 ? (
+          <div className="bg-white border-2 border-dashed border-slate-200 rounded-[3rem] py-24 flex flex-col items-center text-center px-6">
+            <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center text-3xl mb-4">?</div>
+            <h3 className="text-xl font-black text-slate-900">Aucune tache trouvee</h3>
+            <p className="text-slate-500 mt-2">Votre file d'attente est actuellement vide.</p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {Object.entries(groupedRecs).map(([dateLabel, items]) => (
+              <section key={dateLabel} className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-slate-200" />
+                  <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">{dateLabel}</h2>
+                  <div className="h-px flex-1 bg-slate-200" />
                 </div>
-                <form onSubmit={handleSaveEmp} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-                  
-                  {[{ name: 'name', label: 'Nom complet', placeholder: 'Nom et prénom' },
-                    { name: 'email', label: 'Email', type: 'email', placeholder: 'email@exemple.com' },
-                    { name: 'password', label: editingEmpId ? 'Nouveau mot de passe (optionnel)' : 'Mot de passe', type: 'password', placeholder: 'Min 6 caractères' },
-                  ].map(f => (
-                    <div className="form-group" key={f.name}>
-                      <label>{f.label}</label>
-                      <input name={f.name} type={f.type || 'text'} className="form-control" placeholder={f.placeholder} value={empForm[f.name]} onChange={handleEmpChange} />
-                      {empErrors[f.name] && <span style={{ color: 'var(--danger)', fontSize: '0.78rem' }}>{empErrors[f.name]}</span>}
+
+                <div className="grid grid-cols-1 gap-5">
+                  {items.map((r, i) => (
+                    <div
+                      key={r.id}
+                      onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
+                      className={`group bg-white border transition-all duration-300 rounded-[2rem] overflow-hidden cursor-pointer ${expandedId === r.id ? 'border-blue-400 ring-4 ring-blue-50 shadow-xl' : 'border-slate-200 hover:border-slate-300 hover:shadow-lg hover:-translate-y-1'}`}
+                      style={{ animationDelay: `${i * 100}ms` }}
+                    >
+                      <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex gap-5 items-start">
+                          <div className={`p-4 rounded-2xl transition-colors ${expandedId === r.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-slate-100 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-500'}`}>
+                            <Inbox size={24} />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <h3 className="text-xl font-black text-slate-900">{r.title}</h3>
+                              <StatusBadge status={r.status} />
+                            </div>
+                            <div className="flex items-center gap-4 mt-2 text-slate-400 font-bold text-xs uppercase tracking-tight">
+                              <span className="flex items-center gap-1.5"><Calendar size={14} /> {new Date(r.created_at).toLocaleDateString('fr-FR')}</span>
+                              {r.medias?.length > 0 && <span className="flex items-center gap-1.5 text-blue-500"><Paperclip size={14} /> {r.medias.length} fichiers</span>}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 self-end md:self-center">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${expandedId === r.id ? 'bg-blue-600 text-white rotate-180' : 'bg-slate-50 text-slate-400 group-hover:bg-slate-100'}`}>
+                            <ChevronDown size={20} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {expandedId === r.id && (
+                        <div className="px-6 pb-8 md:px-8 md:pb-10 animate-in slide-in-from-top-5 duration-500">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-6 border-t border-slate-100">
+                            <div className="space-y-6">
+                              <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Description du probleme</label>
+                                <p className="text-slate-600 font-medium leading-relaxed bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                  {r.content || 'Aucune description fournie.'}
+                                </p>
+                              </div>
+
+                              {r.medias?.length > 0 && (
+                                <div>
+                                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Preuves et documents</label>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {r.medias.map((m) => (
+                                      <a
+                                        key={m.id}
+                                        href={`http://localhost:8000/storage/${m.path}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl hover:border-blue-400 hover:text-blue-600 transition-all font-bold text-sm shadow-sm group/btn"
+                                      >
+                                        <span className="flex items-center gap-2 truncate"><Paperclip size={16} /> Fichier joint</span>
+                                        <ExternalLink size={14} className="opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              {r.latitude && r.longitude ? (
+                                <div className="h-full min-h-[300px] flex flex-col">
+                                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3 flex items-center gap-2"><MapPin size={12} /> Localisation precise</label>
+                                  <div className="flex-1 rounded-[2rem] overflow-hidden border border-slate-200 shadow-inner z-0">
+                                    <MapContainer
+                                      center={[parseFloat(r.latitude), parseFloat(r.longitude)]}
+                                      zoom={15}
+                                      style={{ height: '100%', width: '100%' }}
+                                      scrollWheelZoom={false}
+                                    >
+                                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                      <Marker position={[parseFloat(r.latitude), parseFloat(r.longitude)]}>
+                                        <Popup className="font-bold">{r.title}</Popup>
+                                      </Marker>
+                                    </MapContainer>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="h-full flex items-center justify-center bg-slate-50 rounded-[2rem] border border-dashed border-slate-200 text-slate-400 font-bold text-sm italic">
+                                  Aucune coordonnee GPS
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {['en_attent', 'en_cours'].includes(r.status) && (
+                            <div className="mt-10 flex flex-wrap gap-4 pt-6 border-t border-slate-100">
+                              <button
+                                onClick={(e) => handleStatusUpdate(e, r.id, 'en_cours')}
+                                disabled={saving || r.status === 'en_cours'}
+                                className="flex-1 min-w-[150px] bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-6 py-4 rounded-2xl font-black text-sm transition-all shadow-lg shadow-blue-50 flex items-center justify-center gap-2 disabled:opacity-50"
+                              >
+                                <Clock size={18} /> Mettre en cours
+                              </button>
+                              <button
+                                onClick={(e) => handleStatusUpdate(e, r.id, 'terminee')}
+                                disabled={saving}
+                                className="flex-[1.5] min-w-[200px] bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-4 rounded-2xl font-black text-sm transition-all shadow-xl shadow-emerald-100 flex items-center justify-center gap-2 disabled:opacity-50"
+                              >
+                                <CheckCircle2 size={18} /> Marquer comme resolue
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
-
-                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-                    <button type="submit" className="btn btn-primary" disabled={empSaving}>{empSaving ? 'Enregistrement…' : 'Enregistrer'}</button>
-                    <button type="button" className="btn btn-secondary" onClick={() => setShowEmpModal(false)}>Annuler</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+export default function ChefDashboard() {
+  return (
+    <Routes>
+      <Route index element={<ChefOverview />} />
+      <Route path="employees" element={<Employes />} />
+      <Route path="*" element={<Navigate to="/chef" replace />} />
+    </Routes>
   );
 }

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/user', function (Request $request) {
-    return $request->user();
+    return $request->user()->load('departement');
 })->middleware('auth:sanctum');
 
 Route::post('auth/register', [AuthController::class, 'register']);

@@ -24,6 +24,14 @@ export default function App() {
 
   if (loading) return <LoadingSpinner fullPage />;
 
+  const defaultPath = user?.role === 'admin'
+    ? '/admin/dashboard'
+    : user?.role === 'chef_dep'
+      ? '/chef'
+      : user?.role === 'employe'
+        ? '/employee'
+        : '/home';
+
   return (
     <>
       {/* Show navbar only when authenticated */}
@@ -31,9 +39,9 @@ export default function App() {
 
       <Routes>
         {/* Public routes */}
-        <Route path="/"         element={user ? <Navigate to="/home" replace /> : <Welcome />} />
-        <Route path="/login"    element={user ? <Navigate to="/home" replace /> : <Login />} />
-        <Route path="/register" element={user ? <Navigate to="/home" replace /> : <Register />} />
+        <Route path="/"         element={user ? <Navigate to={defaultPath} replace /> : <Welcome />} />
+        <Route path="/login"    element={user ? <Navigate to={defaultPath} replace /> : <Login />} />
+        <Route path="/register" element={user ? <Navigate to={defaultPath} replace /> : <Register />} />
 
         {/* Shared protected routes */}
         <Route path="/home"    element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -55,7 +63,7 @@ export default function App() {
         } />
 
         {/* Chef Service */}
-        <Route path="/chef" element={
+        <Route path="/chef/*" element={
           <RoleRoute roles={['chef_dep', 'admin']}>
             <ChefDashboard />
           </RoleRoute>
@@ -69,7 +77,7 @@ export default function App() {
         } />
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to={user ? '/home' : '/'} replace />} />
+        <Route path="*" element={<Navigate to={user ? defaultPath : '/'} replace />} />
       </Routes>
     </>
   );

@@ -20,6 +20,7 @@ class AuthController extends Controller
         $validated['role'] = 'citoyen';
 
         $user = User::create($validated);
+        $user->load('departement');
 
          $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -43,8 +44,8 @@ class AuthController extends Controller
                 'message' => 'Invalid credentials'
             ], 401);
         }
-    
-        $user = $request->user(); // already authenticated user
+        //$user = $request->user();
+        $user = $request->user()->load('departement'); // already authenticated user
         $token = $user->createToken('loginToken')->plainTextToken;
     
         return response()->json([
@@ -61,4 +62,3 @@ class AuthController extends Controller
             ]);
     }
 }
-

@@ -13,7 +13,7 @@ class ReclamationController extends Controller
      */
     public function index()
     {
-        $reclamation = Reclamation::paginate(15);
+        $reclamation = Reclamation::with(['medias', 'departement', 'user'])->paginate(15);
         return response()->json($reclamation);
     }
 
@@ -49,7 +49,7 @@ class ReclamationController extends Controller
      */
     public function show(Reclamation $reclamation)
     {
-        return response()->json($reclamation);
+        return response()->json($reclamation->load(['medias', 'departement', 'user']));
     }
 
    
@@ -69,7 +69,7 @@ class ReclamationController extends Controller
         }
 
         $reclamation->update($data);
-        return response()->json($reclamation);
+        return response()->json($reclamation->load(['medias', 'departement', 'user']));
     }
 
     /**

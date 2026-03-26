@@ -1,66 +1,104 @@
+import { 
+  ClipboardCheck, 
+  Building2, 
+  RefreshCw, 
+  Users, 
+  ShieldCheck, 
+  MapPin, 
+  User as UserIcon, 
+  Wrench, 
+  BarChart3, 
+  Settings,
+  Heart
+} from 'lucide-react';
+
 export default function About() {
   const features = [
-    { icon: '📋', title: 'Easy Submission', desc: 'Citizens can submit reclamations with location data and full details in minutes.' },
-    { icon: '🏢', title: 'Department Routing', desc: 'Reclamations are automatically routed to the responsible department for handling.' },
-    { icon: '🔄', title: 'Status Tracking', desc: 'Real-time status updates from "En Attente" all the way to "Traité".' },
-    { icon: '👥', title: 'Team Collaboration', desc: 'Chefs de service assign tasks to employees and monitor progress effectively.' },
-    { icon: '🔒', title: 'Secure & Private', desc: 'All data is secured with token-based authentication and role-based access control.' },
-    { icon: '📍', title: 'Location-Aware', desc: 'GPS coordinates help departments pinpoint issues on the ground quickly.' },
+    { icon: ClipboardCheck, title: 'Soumission Facile', desc: 'Les citoyens peuvent soumettre des réclamations avec photos et détails en quelques minutes.', color: 'text-blue-600', bg: 'bg-blue-50' },
+    { icon: Building2, title: 'Routage Intelligent', desc: 'Les réclamations sont automatiquement dirigées vers le service responsable (Travaux, Éclairage, etc.).', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { icon: RefreshCw, title: 'Suivi en Temps Réel', desc: 'Mises à jour instantanées du statut, de "En Attente" jusqu\'à "Traité".', color: 'text-amber-600', bg: 'bg-amber-50' },
+    { icon: Users, title: 'Collaboration d\'Équipe', desc: 'Les chefs de service assignent des tâches et suivent l\'avancement efficacement.', color: 'text-purple-600', bg: 'bg-purple-50' },
+    { icon: ShieldCheck, title: 'Sécurisé & Privé', desc: 'Toutes les données sont protégées par une authentification robuste et un contrôle d\'accès strict.', color: 'text-red-600', bg: 'bg-red-50' },
+    { icon: MapPin, title: 'Géo-localisation', desc: 'Les coordonnées GPS aident les départements à localiser précisément les problèmes sur le terrain.', color: 'text-cyan-600', bg: 'bg-cyan-50' },
+  ];
+
+  const roles = [
+    { label: 'Citoyen', icon: UserIcon, badgeStyle: 'bg-emerald-50 text-emerald-700 border-emerald-100', desc: 'Soumettez et suivez vos réclamations personnelles de n\'importe où.' },
+    { label: 'Employé', icon: Wrench, badgeStyle: 'bg-amber-50 text-amber-700 border-amber-100', desc: 'Gérez les interventions techniques assignées par votre Chef de service.' },
+    { label: 'Chef de Service', icon: BarChart3, badgeStyle: 'bg-purple-50 text-purple-700 border-purple-100', desc: 'Assignez les tâches, gérez vos équipes et validez les résolutions.' },
+    { label: 'Administrateur', icon: Settings, badgeStyle: 'bg-blue-50 text-blue-700 border-blue-100', desc: 'Gestion complète de la plateforme : utilisateurs, départements et rapports.' },
   ];
 
   return (
-    <div className="page-wrapper fade-up">
-      {/* Hero */}
-      <div className="card" style={{ textAlign: 'center', marginBottom: '2rem', background: 'linear-gradient(135deg, var(--bg-card), rgba(99,102,241,0.08))', padding: '3rem 2rem' }}>
-        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏛️</div>
-        <h1 className="section-title" style={{ fontSize: '2rem', marginBottom: '1rem' }}>About ReclamApp</h1>
-        <p style={{ color: 'var(--text-muted)', maxWidth: 600, margin: '0 auto', lineHeight: 1.8, fontSize: '0.95rem' }}>
-          ReclamApp is a civic platform designed to bridge the gap between citizens and local government departments.
-          Our mission is to make reclamation management transparent, efficient, and accessible to everyone.
-        </p>
-      </div>
+    <div className="max-w-6xl mx-auto px-4 py-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 p-8 md:p-16 mb-16 text-center shadow-2xl">
+        {/* Decorative Background Elements */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
+          <div className="absolute top-[-20%] left-[-10%] w-96 h-96 bg-blue-500 rounded-full blur-[100px]" />
+          <div className="absolute bottom-[-20%] right-[-10%] w-96 h-96 bg-emerald-500 rounded-full blur-[100px]" />
+        </div>
 
-      {/* Features */}
-      <div className="section-header">
-        <h2 className="section-title">What We Offer</h2>
-      </div>
-      <div className="grid-3" style={{ marginBottom: '2.5rem' }}>
-        {features.map(f => (
-          <div key={f.title} className="card card-sm" style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>{f.icon}</div>
-            <h3 style={{ fontWeight: 700, marginBottom: '0.5rem', fontSize: '0.95rem' }}>{f.title}</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', lineHeight: 1.6 }}>{f.desc}</p>
+        <div className="relative z-10 max-w-3xl mx-auto">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl mb-6 border border-white/20">
+            <Building2 className="text-white" size={32} />
           </div>
-        ))}
+          <h1 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">À propos de ReclamApp</h1>
+          <p className="text-slate-300 text-lg leading-relaxed font-medium">
+            ReclamApp est une plateforme citoyenne conçue pour combler le fossé entre les citoyens et l'administration locale. 
+            Notre mission est de rendre la gestion des réclamations transparente, efficace et accessible à tous pour une ville meilleure.
+          </p>
+        </div>
       </div>
 
-      {/* Roles */}
-      <div className="section-header">
-        <h2 className="section-title">User Roles</h2>
-      </div>
-      <div className="grid-2">
-        {[
-          { role: 'citoyen', label: 'Citizen', icon: '👤', desc: 'Submit and track personal reclamations from any location.' },
-          { role: 'employe', label: 'Employee', icon: '🔧', desc: 'Handle reclamations assigned by the Chef de service.' },
-          { role: 'chef_dep', label: 'Chef Service', icon: '📊', desc: 'Assign reclamations, manage employees, update statuses.' },
-          { role: 'admin', label: 'Administrator', icon: '⚙️', desc: 'Full platform management: users, departments, reclamations.' },
-        ].map(r => (
-          <div key={r.role} className="card card-sm" style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-            <div className="stat-icon stat-icon-primary" style={{ fontSize: '1.4rem', flexShrink: 0 }}>{r.icon}</div>
-            <div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.3rem' }}>
-                <span style={{ fontWeight: 700 }}>{r.label}</span>
-                <span className={`badge badge-role-${r.role}`}>{r.label}</span>
+      {/* Features Grid */}
+      <div className="mb-20">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-widest mb-2">Nos Services</h2>
+          <div className="h-1 w-20 bg-blue-600 mx-auto rounded-full" />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {features.map((f, i) => (
+            <div key={i} className="group p-8 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className={`w-14 h-14 rounded-2xl ${f.bg} ${f.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                <f.icon size={28} />
               </div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', lineHeight: 1.6 }}>{r.desc}</p>
+              <h3 className="text-lg font-bold text-slate-900 mb-3">{f.title}</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">{f.desc}</p>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      <div className="card" style={{ marginTop: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-        <p>Made with ❤️ for better civic engagement. Version 1.0.0 &mdash; 2026</p>
+      {/* Roles Section */}
+      <div className="mb-16">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-widest mb-2">Les Acteurs</h2>
+          <div className="h-1 w-20 bg-blue-600 mx-auto rounded-full" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {roles.map((r, i) => (
+            <div key={i} className="flex items-start gap-5 p-6 bg-white border border-slate-100 rounded-3xl hover:border-blue-200 transition-colors">
+              <div className="p-4 bg-slate-50 rounded-2xl text-slate-600 shadow-sm">
+                <r.icon size={24} />
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="font-bold text-slate-900 uppercase tracking-tight text-sm">{r.label}</span>
+                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md border ${r.badgeStyle}`}>
+                    {r.label}
+                  </span>
+                </div>
+                <p className="text-slate-500 text-sm leading-relaxed">{r.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
+
     </div>
   );
 }
