@@ -3,16 +3,18 @@ import { useAuth } from '../../context/AuthContext';
 import { userService, departementService } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
-  UserPlus, Search, Filter, Edit2, Trash2,
-  Building2, X, CheckCircle, AlertCircle,
-  Users, RefreshCw
+  UserPlus, Search, Edit2, Trash2,
+  X, CheckCircle, AlertCircle,
+  Users, RefreshCw, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 const roleLabel = { admin: 'Admin', chef_dep: 'Chef de Service', employe: 'Employé', citoyen: 'Citoyen' };
+
 const normalizeRole = (role) => {
   if (role === 'user' || role === 'citizen') return 'citoyen';
   return role;
 };
+
 const emptyForm = { name: '', email: '', password: '', departement_id: '', role: 'citoyen', cin: '' };
 
 export default function AdminUsers() {
@@ -21,19 +23,26 @@ export default function AdminUsers() {
   const [depts, setDepts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Modal & Form States
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
+  // Status States
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Global Filter States
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage =15;
 
   const fetchAll = async () => {
     setLoading(true);
@@ -49,6 +58,19 @@ export default function AdminUsers() {
 
   useEffect(() => { fetchAll(); }, []);
 
+  // Reset to page 1 whenever search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, roleFilter]);
+
+  // Auto-hide notifications
+  useEffect(() => {
+    if (success || error) {
+      const timer = setTimeout(() => { setSuccess(''); setError(''); }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, error]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm(p => {
@@ -63,7 +85,6 @@ export default function AdminUsers() {
     setForm(emptyForm);
     setEditingId(null);
     setErrors({});
-    setError('');
     setShowModal(true);
   };
 
@@ -78,12 +99,11 @@ export default function AdminUsers() {
     });
     setEditingId(userToEdit.id);
     setErrors({});
-    setError('');
     setShowModal(true);
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); setError(''); setSuccess('');
+    e.preventDefault();
     setSubmitting(true);
     try {
       const payload = { ...form };
@@ -105,14 +125,11 @@ export default function AdminUsers() {
         const m = {};
         Object.keys(msgs).forEach(k => { m[k] = msgs[k][0]; });
         setErrors(m);
-        setError(m.departement_id || Object.values(m)[0] || 'Échec de la sauvegarde.');
-      }
-      else setError(err?.response?.data?.message || 'Échec de la sauvegarde.');
+      } else setError('Échec de la sauvegarde.');
     } finally { setSubmitting(false); }
   };
 
   const confirmDelete = async () => {
-    if (!deletingId) return;
     try {
       await userService.delete(deletingId);
       setSuccess('Utilisateur supprimé.');
@@ -121,26 +138,23 @@ export default function AdminUsers() {
     } catch { setError('Échec de la suppression.'); setShowDeleteModal(false); }
   };
 
+  // LOGIC: Filtered results (Global)
   const filtered = users.filter(u => {
-    const matchesSearch = u.name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = u.name?.toLowerCase().includes(search.toLowerCase()) || 
+                         u.email?.toLowerCase().includes(search.toLowerCase());
     const matchesRole = roleFilter ? normalizeRole(u.role) === roleFilter : true;
     return matchesSearch && matchesRole;
   });
-  //
-  useEffect(() => {
-    if (success || error) {
-      const timer = setTimeout(() => {
-        setSuccess('');
-        setError('');
-      }, 3000); // 3 seconds
 
-      return () => clearTimeout(timer); // Cleanup timer if component unmounts or state changes
-    }
-  }, [success, error]);
+  // LOGIC: Pagination (Local slice of global filtered)
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
     <div className="animate-in fade-in duration-500 pb-10">
-      {/* Page Header */}
+      {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
         <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
@@ -162,7 +176,7 @@ export default function AdminUsers() {
           </div>
 
           <select
-            className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-50 transition-all font-bold text-slate-700 text-sm"
+            className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-50 font-bold text-slate-700 text-sm"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
           >
@@ -183,145 +197,174 @@ export default function AdminUsers() {
       </div>
 
       {/* Notifications */}
-      <div className="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+      <div className="fixed top-24 right-6 z-50 flex flex-col gap-2 pointer-events-none">
         {error && (
-          <div className="p-4 bg-white border-l-4 border-red-500 shadow-xl rounded-lg flex items-center gap-3 text-red-700 font-bold animate-in slide-in-from-right-full pointer-events-auto">
+          <div className="p-4 bg-white border-l-4 border-red-500 shadow-xl rounded-xl flex items-center gap-3 text-red-700 font-bold animate-in slide-in-from-right-full pointer-events-auto">
             <AlertCircle size={18} /> {error}
           </div>
         )}
         {success && (
-          <div className="p-4 bg-white border-l-4 border-emerald-500 shadow-xl rounded-lg flex items-center gap-3 text-emerald-700 font-bold animate-in slide-in-from-right-full pointer-events-auto">
+          <div className="p-4 bg-white border-l-4 border-emerald-500 shadow-xl rounded-xl flex items-center gap-3 text-emerald-700 font-bold animate-in slide-in-from-right-full pointer-events-auto">
             <CheckCircle size={18} /> {success}
           </div>
         )}
       </div>
 
-      {/* Main Content Card */}
-      <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+      {/* Table Card */}
+      <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
         {loading ? (
           <div className="py-20 flex justify-center"><LoadingSpinner /></div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-100">
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Utilisateur</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Rôle</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filtered.map(u => (
-                  <tr key={u.id} className="hover:bg-slate-50/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs">
-                          {u.name?.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-900 text-sm leading-none mb-1">{u.name}</p>
-                          <p className="text-[11px] text-slate-500 font-medium">{u.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter border
-                        ${u.role === 'admin' ? 'bg-purple-50 text-purple-600 border-purple-100' :
-                          u.role === 'chef_dep' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                            u.role === 'employe' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                              'bg-slate-50 text-slate-500 border-slate-200'}
-                      `}>
-                        {roleLabel[normalizeRole(u.role)] || u.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => handleOpenEdit(u)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Edit2 size={16} /></button>
-                        <button onClick={() => { setDeletingId(u.id); setShowDeleteModal(true); }} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={16} /></button>
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-100">
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Utilisateur</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Rôle</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {currentItems.map(u => (
+                    <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm">
+                            {u.name?.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 text-sm mb-0.5">{u.name}</p>
+                            <p className="text-[11px] text-slate-500 font-medium">{u.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter border
+                          ${u.role === 'admin' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                            u.role === 'chef_dep' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                              u.role === 'employe' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                'bg-slate-50 text-slate-500 border-slate-200'}
+                        `}>
+                          {roleLabel[normalizeRole(u.role)] || u.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => handleOpenEdit(u)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-sm rounded-lg transition-all"><Edit2 size={16} /></button>
+                          <button onClick={() => { setDeletingId(u.id); setShowDeleteModal(true); }} className="p-2 text-slate-400 hover:text-red-600 hover:bg-white hover:shadow-sm rounded-lg transition-all"><Trash2 size={16} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                Page <span className="text-slate-900">{currentPage}</span> sur <span className="text-slate-900">{totalPages || 1}</span> 
+                <span className="ml-2 opacity-50">•</span> 
+                <span className="ml-2">{filtered.length} résultats</span>
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => p - 1)}
+                  className="flex items-center gap-1 px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  <ChevronLeft size={14} /> Précédent
+                </button>
+                
+                <button
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  className="flex items-center gap-1 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
+                >
+                  Suivant <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
-      {/* Compact Create / Edit Modal */}
+      {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={() => setShowModal(false)} />
-          <div className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-auto">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h3 className="font-black text-slate-900">{editingId ? 'Modifier' : 'Ajouter'}</h3>
-              <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-white rounded-full transition-colors"><X size={18} /></button>
+          <div className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-auto">
+            <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="font-black text-slate-900 text-lg">{editingId ? 'Modifier' : 'Ajouter'}</h3>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-white rounded-full transition-colors text-slate-400"><X size={20} /></button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Rôle</label>
-                  <select name="role" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 text-sm font-bold" value={form.role} onChange={handleChange}>
+            <form onSubmit={handleSubmit} className="p-8 space-y-5 max-h-[80vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Rôle</label>
+                  <select name="role" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 text-sm font-bold transition-all" value={form.role} onChange={handleChange}>
                     <option value="citoyen">Citoyen</option>
                     <option value="employe">Employé</option>
                     <option value="chef_dep">Chef</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">CIN</label>
-                  <input name="cin" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 text-sm" placeholder="AB123..." value={form.cin} onChange={handleChange} />
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">CIN</label>
+                  <input name="cin" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 text-sm transition-all" placeholder="AB123456" value={form.cin} onChange={handleChange} />
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Nom Complet</label>
-                <input name="name" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 text-sm" value={form.name} onChange={handleChange} required />
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nom Complet</label>
+                <input name="name" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 text-sm transition-all" value={form.name} onChange={handleChange} required />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Email</label>
-                <input name="email" type="email" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 text-sm" value={form.email} onChange={handleChange} required />
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Email</label>
+                <input name="email" type="email" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 text-sm transition-all" value={form.email} onChange={handleChange} required />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Mot de passe</label>
-                <input name="password" type="password" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 text-sm" placeholder="••••••••" value={form.password} onChange={handleChange} />
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Mot de passe</label>
+                <input name="password" type="password" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 text-sm transition-all" placeholder={editingId ? "Laisser vide" : "••••••••"} value={form.password} onChange={handleChange} required={!editingId} />
               </div>
 
               {form.role !== 'citoyen' && (
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Département</label>
-                  <select name="departement_id" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-400 text-sm font-bold" value={form.departement_id} onChange={handleChange}>
-                    <option value="">— Aucun —</option>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Département</label>
+                  <select name="departement_id" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 text-sm font-bold transition-all" value={form.departement_id} onChange={handleChange}>
+                    <option value="">— Aucun Département —</option>
                     {depts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
                 </div>
               )}
 
-              <div className="flex gap-2 pt-2">
-                <button type="submit" disabled={submitting} className="flex-1 bg-blue-600 text-white font-black py-3 rounded-xl hover:bg-blue-700 transition-all text-sm flex items-center justify-center gap-2">
-                  {submitting ? <RefreshCw className="animate-spin" size={16} /> : <CheckCircle size={16} />}
+              <div className="flex gap-3 pt-4">
+                <button type="submit" disabled={submitting} className="flex-[2] bg-blue-600 text-white font-black py-4 rounded-2xl hover:bg-blue-700 transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-100">
+                  {submitting ? <RefreshCw className="animate-spin" size={18} /> : <CheckCircle size={18} />}
                   Enregistrer
                 </button>
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 text-sm">Annuler</button>
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-200 text-sm transition-all">Annuler</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={() => setShowDeleteModal(false)} />
-          <div className="relative bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-black text-slate-900 mb-2">Supprimer ?</h3>
-            <p className="text-slate-500 text-xs font-medium mb-6">Cette action est définitive pour cet utilisateur.</p>
-            <div className="flex gap-2">
-              <button onClick={confirmDelete} className="flex-1 bg-red-500 text-white font-bold py-2.5 rounded-xl hover:bg-red-600 transition-all text-sm">Supprimer</button>
-              <button onClick={() => setShowDeleteModal(false)} className="flex-1 bg-slate-100 text-slate-500 font-bold py-2.5 rounded-xl hover:bg-slate-200 text-sm">Annuler</button>
+          <div className="relative bg-white w-full max-w-xs rounded-[2rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-black text-slate-900 text-center mb-2">Supprimer ?</h3>
+            <p className="text-slate-500 text-xs font-medium text-center mb-8">Cette action est définitive et retirera l'accès à cet utilisateur.</p>
+            <div className="flex flex-col gap-2">
+              <button onClick={confirmDelete} className="w-full bg-red-500 text-white font-bold py-4 rounded-2xl hover:bg-red-600 transition-all text-sm shadow-lg shadow-red-100">Supprimer</button>
+              <button onClick={() => setShowDeleteModal(false)} className="w-full bg-slate-100 text-slate-500 font-bold py-4 rounded-2xl hover:bg-slate-200 transition-all text-sm">Annuler</button>
             </div>
           </div>
         </div>

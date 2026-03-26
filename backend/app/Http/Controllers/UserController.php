@@ -9,12 +9,38 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function index()
-    {   
-        //$users = User::whereNot('role','citoyen')->with('departement')->get();
-        $users = User::with('departement')->get();
-        return response()->json($users);
+    // public function index()
+    // {   
+    //     //$users = User::whereNot('role','citoyen')->with('departement')->get();
+    //     $users = User::with('departement')->get();
+    //     return response()->json($users);
+    // }
+    public function index(Request $request)
+{   
+    // 1. Start a query on the User model with its relationship
+    $query = User::with('departement');
+
+    // 2. Exclude the current user (so they don't delete themselves)
+    $query->where('id', '!=', $request->user()->id);
+
+    // 3. Global Search: Filter by name or email if 'search' is provided
+    if ($request->has('search') && !empty($request->search)) {
+        $searchTerm = $request->search;
+        $query->where(function($q) use ($searchTerm) {
+            $q->where('name', 'like', "%{$searchTerm}%")
+              ->orWhere('email', 'like', "%{$searchTerm}%");
+        });
     }
+
+    // 4. Role Filter: Filter by role if 'role' is provided
+    if ($request->has('role') && !empty($request->role)) {
+        $query->where('role', $request->role);
+    }
+
+    $users = $query->latest()->paginate(15);
+
+    return response()->json($users);
+}
     public function store(Request $request)
     {   
         if ($request->user()->role === 'chef_dep') {
