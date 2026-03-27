@@ -3,6 +3,7 @@ import logo from './../assets/Logo.png';
 import { Link } from 'react-router-dom';
 import { LayoutDashboard, Send, ShieldCheck, Zap, LogIn, ArrowRight } from 'lucide-react';
 import './../App.css';
+import Footer from '../components/Footer';
 
 export default function Welcome() {
   return (
@@ -19,7 +20,7 @@ export default function Welcome() {
               <span className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
                 Service public
               </span>
-              <span className="text-lg font-extrabold text-slate-900">E-Reclamation</span>
+              <span className="text-lg font-extrabold text-slate-900">e-reclamation</span>
             </div>
           </div>
           <div className="hidden items-center gap-3 sm:flex">
@@ -113,9 +114,9 @@ export default function Welcome() {
         </section>
       </main>
 
-      <footer className="px-6 pb-10 text-center text-xs text-slate-500">
-        &copy; 2026 Commune Territoriale Kasba Tadla
-      </footer>
+
+      <Footer />
+
     </div>
   );
 }
