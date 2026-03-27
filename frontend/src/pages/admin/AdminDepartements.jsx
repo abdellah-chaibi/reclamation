@@ -23,7 +23,7 @@ export default function AdminDepartements() {
       const [dRes, uRes] = await Promise.all([departementService.getAll(), userService.getAll()]);
       const d = dRes.data?.data || dRes.data || []; 
       setDepts(Array.isArray(d) ? d : []);
-      const u = uRes.data || []; 
+      const u = uRes.data?.data || uRes.data || []; 
       setUsers(Array.isArray(u) ? u.filter(x => x.role === 'chef_dep') : []);
     } catch { setError('Échec du chargement des départements.'); }
     finally { setLoading(false); }

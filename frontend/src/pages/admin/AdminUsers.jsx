@@ -311,35 +311,41 @@ export default function AdminUsers() {
                     <option value="chef_dep">Chef</option>
                     <option value="admin">Admin</option>
                   </select>
+                  {errors.role && <p className="text-red-500 text-xs font-bold ml-1">{errors.role}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">CIN</label>
                   <input name="cin" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 text-sm transition-all" placeholder="AB123456" value={form.cin} onChange={handleChange} />
+                  {errors.cin && <p className="text-red-500 text-xs font-bold ml-1">{errors.cin}</p>}
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nom Complet</label>
                 <input name="name" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 text-sm transition-all" value={form.name} onChange={handleChange} required />
+                {errors.name && <p className="text-red-500 text-xs font-bold ml-1">{errors.name}</p>}
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Email</label>
                 <input name="email" type="email" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 text-sm transition-all" value={form.email} onChange={handleChange} required />
+                {errors.email && <p className="text-red-500 text-xs font-bold ml-1">{errors.email}</p>}
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Mot de passe</label>
                 <input name="password" type="password" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 text-sm transition-all" placeholder={editingId ? "Laisser vide" : "••••••••"} value={form.password} onChange={handleChange} required={!editingId} />
+                {errors.password && <p className="text-red-500 text-xs font-bold ml-1">{errors.password}</p>}
               </div>
 
               {form.role !== 'citoyen' && (
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Département</label>
-                  <select name="departement_id" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 text-sm font-bold transition-all" value={form.departement_id} onChange={handleChange}>
+                  <select name="departement_id" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 text-sm font-bold transition-all" value={form.departement_id} onChange={handleChange} required>
                     <option value="">— Aucun Département —</option>
                     {depts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
+                  {errors.departement_id && <p className="text-red-500 text-xs font-bold ml-1">{errors.departement_id}</p>}
                 </div>
               )}
 

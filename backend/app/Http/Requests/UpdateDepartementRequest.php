@@ -23,7 +23,7 @@ class UpdateDepartementRequest extends FormRequest
     {
         return [
             'name' => 'sometimes|required|string|max:255',
-            'user_id' => 'sometimes|required|exists:users,id',
+            'user_id' => 'nullable|exists:users,id',
         ];
     }
 }
