@@ -10,7 +10,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import {
   CheckCircle2, AlertCircle, ChevronDown,
-  MapPin, Paperclip, Calendar, Clock, Inbox, ExternalLink
+  MapPin, Paperclip, Calendar, Clock, Inbox, ExternalLink, XCircle,
 } from 'lucide-react';
 
 delete L.Icon.Default.prototype._getIconUrl;
@@ -47,6 +47,8 @@ function ChefOverview() {
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
+  const [refuseId, setRefuseId] = useState(null);
+  const [refusalReason, setRefusalReason] = useState('');
 
   const fetchAll = async () => {
     setLoading(true);
@@ -71,12 +73,49 @@ function ChefOverview() {
   const handleStatusUpdate = async (e, id, newStatus) => {
     e.stopPropagation();
     setSaving(true);
+    setError('');
+    setSuccess('');
     try {
       await reclamationService.update(id, { status: newStatus });
       setSuccess('Mission mise a jour.');
       fetchAll();
     } catch {
       setError('Erreur lors du changement de statut.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openRefuseModal = (e, id) => {
+    e.stopPropagation();
+    setError('');
+    setSuccess('');
+    setRefuseId(id);
+    setRefusalReason('');
+  };
+
+  const closeRefuseModal = () => {
+    if (saving) return;
+    setRefuseId(null);
+    setRefusalReason('');
+  };
+
+  const handleRefuse = async () => {
+    if (!refuseId || refusalReason.trim().length < 10) {
+      setError('Le motif du refus doit contenir au moins 10 caracteres.');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+    setSuccess('');
+    try {
+      await reclamationService.refuse(refuseId, { refusal_reason: refusalReason.trim() });
+      setSuccess('Reclamation refusee avec succes.');
+      closeRefuseModal();
+      fetchAll();
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Erreur lors du refus de la reclamation.');
     } finally {
       setSaving(false);
     }
@@ -186,6 +225,15 @@ function ChefOverview() {
                                 </p>
                               </div>
 
+                              {r.refusal_reason && (
+                                <div>
+                                  <label className="text-[10px] font-black uppercase tracking-widest text-red-400 block mb-2">Motif du refus</label>
+                                  <p className="text-red-700 font-medium leading-relaxed bg-red-50 p-5 rounded-2xl border border-red-100">
+                                    {r.refusal_reason}
+                                  </p>
+                                </div>
+                              )}
+
                               {r.medias?.length > 0 && (
                                 <div>
                                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Preuves et documents</label>
@@ -250,6 +298,13 @@ function ChefOverview() {
                               >
                                 <CheckCircle2 size={18} /> Marquer comme resolue
                               </button>
+                              <button
+                                onClick={(e) => openRefuseModal(e, r.id)}
+                                disabled={saving}
+                                className="flex-1 min-w-[180px] bg-red-50 border-2 border-red-500 text-red-600 hover:bg-red-600 hover:text-white px-6 py-4 rounded-2xl font-black text-sm transition-all shadow-lg shadow-red-50 flex items-center justify-center gap-2 disabled:opacity-50"
+                              >
+                                <XCircle size={18} /> Refuser
+                              </button>
                             </div>
                           )}
                         </div>
@@ -262,6 +317,37 @@ function ChefOverview() {
           </div>
         )}
       </div>
+
+      {refuseId && (
+        <div className="fixed inset-0 z-[120] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-[2rem] shadow-2xl p-6">
+            <h3 className="text-xl font-black text-slate-900">Refuser la reclamation</h3>
+            <p className="text-sm text-slate-500 mt-2">Ajoutez le motif du refus. Le statut deviendra automatiquement "rejete".</p>
+            <textarea
+              className="mt-4 w-full min-h-[150px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-red-400"
+              value={refusalReason}
+              onChange={(e) => setRefusalReason(e.target.value)}
+              placeholder="Expliquez pourquoi la reclamation est refusee..."
+            />
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold"
+                onClick={closeRefuseModal}
+                disabled={saving}
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold disabled:opacity-50"
+                onClick={handleRefuse}
+                disabled={saving}
+              >
+                {saving ? 'En cours...' : 'Confirmer le refus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

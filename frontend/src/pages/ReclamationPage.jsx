@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { reclamationService, departementService } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
@@ -38,6 +39,7 @@ function groupReclamationsByDate(items) {
 }
 
 export default function ReclamationPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const fileInputRef = useRef(null);
 
@@ -66,7 +68,7 @@ export default function ReclamationPage() {
       const depts = dRes.data?.data || dRes.data || [];
       setDepartements(Array.isArray(depts) ? depts : []);
     } catch {
-      setErrorMsg('Echec du chargement des donnees.');
+      setErrorMsg(t('reclamations.messages.loadError'));
     } finally {
       setLoadingList(false);
     }
@@ -74,7 +76,7 @@ export default function ReclamationPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [t]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -92,7 +94,7 @@ export default function ReclamationPage() {
 
   const useMyLocation = () => {
     if (!navigator.geolocation) {
-      setErrorMsg("La geolocalisation n'est pas supportee.");
+      setErrorMsg(t('reclamations.messages.geoUnsupported'));
       return;
     }
 
@@ -105,17 +107,17 @@ export default function ReclamationPage() {
         }));
         setErrors((prev) => ({ ...prev, latitude: '', longitude: '' }));
       },
-      () => setErrorMsg("Impossible d'obtenir la localisation.")
+      () => setErrorMsg(t('reclamations.messages.geoFailed'))
     );
   };
 
   const validate = () => {
     const nextErrors = {};
-    if (!form.title.trim()) nextErrors.title = 'Le titre est requis.';
-    if (!form.content.trim()) nextErrors.content = 'La description est requise.';
-    if (!form.departement_id) nextErrors.departement_id = 'Veuillez choisir un departement.';
-    if (!form.latitude) nextErrors.latitude = 'Veuillez detecter votre position.';
-    if (!form.media) nextErrors.media = 'Une preuve (image ou video) est requise.';
+    if (!form.title.trim()) nextErrors.title = t('reclamations.form.errors.titleRequired');
+    if (!form.content.trim()) nextErrors.content = t('reclamations.form.errors.contentRequired');
+    if (!form.departement_id) nextErrors.departement_id = t('reclamations.form.errors.departmentRequired');
+    if (!form.latitude) nextErrors.latitude = t('reclamations.form.errors.locationRequired');
+    if (!form.media) nextErrors.media = t('reclamations.form.errors.mediaRequired');
     return nextErrors;
   };
 
@@ -145,13 +147,13 @@ export default function ReclamationPage() {
       }
 
       await reclamationService.createWithMedia(formData);
-      setSuccessMsg('Reclamation soumise avec succes.');
+      setSuccessMsg(t('reclamations.messages.submitSuccess'));
       setForm(emptyForm);
       setPreviewUrl(null);
       setShowForm(false);
       fetchData();
     } catch {
-      setErrorMsg('Erreur lors de la soumission. Veuillez reessayer.');
+      setErrorMsg(t('reclamations.messages.submitError'));
     } finally {
       setSubmitting(false);
     }
@@ -161,8 +163,8 @@ export default function ReclamationPage() {
     <div className="max-w-5xl mx-auto px-4 py-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Mes reclamations</h1>
-          <p className="text-slate-500 font-medium">Gerez et suivez l'etat de vos signalements.</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">{t('reclamations.title')}</h1>
+          <p className="text-slate-500 font-medium">{t('reclamations.subtitle')}</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -170,7 +172,7 @@ export default function ReclamationPage() {
             }`}
         >
           {showForm ? <X size={20} /> : <Plus size={20} />}
-          {showForm ? 'Annuler' : 'Nouvelle reclamation'}
+          {showForm ? t('common.cancel') : t('reclamations.new')}
         </button>
       </div>
 
@@ -190,11 +192,11 @@ export default function ReclamationPage() {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
               <div className="space-y-1.5">
-                <label className="text-sm font-bold text-slate-700 ml-1">Titre de l'incident</label>
+                <label className="text-sm font-bold text-slate-700 ml-1">{t('reclamations.form.titleLabel')}</label>
                 <input
                   name="title"
                   className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 outline-none transition-all"
-                  placeholder="Ex: Eclairage defectueux..."
+                  placeholder={t('reclamations.form.titlePlaceholder')}
                   value={form.title}
                   onChange={handleChange}
                 />
@@ -202,12 +204,12 @@ export default function ReclamationPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-bold text-slate-700 ml-1">Description detaillee</label>
+                <label className="text-sm font-bold text-slate-700 ml-1">{t('reclamations.form.contentLabel')}</label>
                 <textarea
                   name="content"
                   rows={4}
                   className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 outline-none transition-all"
-                  placeholder="Expliquez le probleme ici..."
+                  placeholder={t('reclamations.form.contentPlaceholder')}
                   value={form.content}
                   onChange={handleChange}
                 />
@@ -215,14 +217,14 @@ export default function ReclamationPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-bold text-slate-700 ml-1">Departement concerne</label>
+                <label className="text-sm font-bold text-slate-700 ml-1">{t('reclamations.form.departmentLabel')}</label>
                 <select
                   name="departement_id"
                   className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 transition-all appearance-none"
                   value={form.departement_id}
                   onChange={handleChange}
                 >
-                  <option value="">Selectionner...</option>
+                  <option value="">{t('reclamations.form.departmentPlaceholder')}</option>
                   {departements.map((dept) => <option key={dept.id} value={dept.id}>{dept.name}</option>)}
                 </select>
                 {errors.departement_id && <p className="text-red-500 text-xs font-bold mt-1">{errors.departement_id}</p>}
@@ -231,7 +233,7 @@ export default function ReclamationPage() {
 
             <div className="space-y-6">
               <div className="space-y-1.5">
-                <label className="text-sm font-bold text-slate-700 ml-1">Preuve (image ou video)</label>
+                <label className="text-sm font-bold text-slate-700 ml-1">{t('reclamations.form.mediaLabel')}</label>
                 <div
                   onClick={() => fileInputRef.current.click()}
                   className="relative group h-48 border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all overflow-hidden"
@@ -247,7 +249,7 @@ export default function ReclamationPage() {
                       <div className="flex gap-2 text-slate-300 mb-2">
                         <ImageIcon size={32} /> <Video size={32} />
                       </div>
-                      <span className="text-xs font-bold text-slate-400 group-hover:text-blue-500">Cliquez pour ajouter un media</span>
+                      <span className="text-xs font-bold text-slate-400 group-hover:text-blue-500">{t('reclamations.form.mediaPlaceholder')}</span>
                     </>
                   )}
                   <input ref={fileInputRef} type="file" multiple hidden accept="image/*,video/*" onChange={handleFileChange} />
@@ -257,26 +259,26 @@ export default function ReclamationPage() {
 
               <div className="bg-white-900 rounded-[2rem] p-6 text-white shadow-xl">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm font-bold text-slate-700 ml-1">Position GPS</span>
+                  <span className="text-sm font-bold text-slate-700 ml-1">{t('reclamations.form.gpsLabel')}</span>
                   <button
                     type="button"
                     onClick={useMyLocation}
                     className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-colors flex items-center gap-2 font-bold"
                   >
-                    <MapPin size={14} /> Détecter
+                    <MapPin size={14} /> {t('reclamations.form.detect')}
                   </button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white/5 p-3 rounded-xl border border-white/10 flex justify-between items-center">
                     <span className="text-xs font-mono text-slate-400">{form.latitude || '0.0000'}</span>
-                    <Lock size={14} className="text-slate-600" title="Verrouille" />
+                    <Lock size={14} className="text-slate-600" title={t('reclamations.form.locked')} />
                   </div>
                   <div className="bg-white/5 p-3 rounded-xl border border-white/10 flex justify-between items-center">
                     <span className="text-xs font-mono text-slate-400">{form.longitude || '0.0000'}</span>
-                    <Lock size={14} className="text-slate-600" title="Verrouille" />
+                    <Lock size={14} className="text-slate-600" title={t('reclamations.form.locked')} />
                   </div>
                 </div>
-                {errors.latitude && <p className="text-red-400 text-[10px] font-bold mt-2 uppercase tracking-tighter">Veuillez cliquer sur Detecter</p>}
+                {errors.latitude && <p className="text-red-400 text-[10px] font-bold mt-2 uppercase tracking-tighter">{errors.latitude}</p>}
               </div>
 
               <button
@@ -285,7 +287,7 @@ export default function ReclamationPage() {
                 className="w-full bg-slate-900 hover:bg-black text-white font-black py-5 rounded-[2rem] shadow-2xl flex items-center justify-center gap-3 transition-all"
               >
                 {submitting ? <RefreshCw className="animate-spin" /> : <Send size={20} />}
-                Envoyer la reclamation
+                {t('reclamations.form.submit')}
               </button>
             </div>
           </form>
@@ -297,7 +299,7 @@ export default function ReclamationPage() {
       ) : reclamations.length === 0 ? (
         <div className="text-center py-32 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
           <FileText size={48} className="mx-auto text-slate-300 mb-4" />
-          <p className="font-bold text-slate-400">Aucune reclamation enregistree.</p>
+          <p className="font-bold text-slate-400">{t('reclamations.empty')}</p>
         </div>
       ) : (
         <div className="space-y-8">
@@ -320,16 +322,27 @@ export default function ReclamationPage() {
                         </div>
                         <p className="text-slate-600 text-sm leading-relaxed max-w-2xl">{reclamation.content}</p>
 
+                        {reclamation.status === 'rejete' && reclamation.refusal_reason && (
+                          <div className="max-w-2xl bg-red-50 border border-red-100 rounded-2xl p-4">
+                            <p className="text-[11px] font-black uppercase tracking-widest text-red-500 mb-2">
+                              {t('reclamations.refusalReason')}
+                            </p>
+                            <p className="text-red-700 text-sm font-medium leading-relaxed">
+                              {reclamation.refusal_reason}
+                            </p>
+                          </div>
+                        )}
+
                         <div className="flex flex-wrap gap-4 pt-2">
                           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-lg">
-                            <Building2 size={14} /> {reclamation.departement?.name || 'General'}
+                            <Building2 size={14} /> {reclamation.departement?.name || t('reclamations.general')}
                           </div>
                           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-lg">
                             <Calendar size={14} /> {new Date(reclamation.created_at).toLocaleDateString('fr-FR')}
                           </div>
                           {reclamation.latitude && (
                             <div className="flex items-center gap-1.5 text-xs font-bold text-blue-500 bg-blue-50 px-3 py-1.5 rounded-lg">
-                              <MapPin size={14} /> Localise
+                              <MapPin size={14} /> {t('reclamations.localized')}
                             </div>
                           )}
                         </div>

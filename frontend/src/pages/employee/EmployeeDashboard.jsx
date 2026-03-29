@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { reclamationService } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
@@ -9,7 +10,7 @@ import L from 'leaflet';
 import {
   ClipboardList, CheckCircle2, AlertCircle, ChevronDown,
   ChevronUp, MapPin, Paperclip, Calendar, Clock, CheckCircle,
-  WrenchIcon
+  WrenchIcon, XCircle
 } from 'lucide-react';
 
 delete L.Icon.Default.prototype._getIconUrl;
@@ -39,6 +40,7 @@ function groupReclamationsByDate(items) {
 }
 
 export default function EmployeeDashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [recs, setRecs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +48,8 @@ export default function EmployeeDashboard() {
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
+  const [refuseId, setRefuseId] = useState(null);
+  const [refusalReason, setRefusalReason] = useState('');
 
   const fetchAll = async () => {
     setLoading(true);
@@ -91,12 +95,48 @@ export default function EmployeeDashboard() {
     }
   };
 
+  const openRefuseModal = (e, id) => {
+    e.stopPropagation();
+    setError('');
+    setSuccess('');
+    setRefuseId(id);
+    setRefusalReason('');
+  };
+
+  const closeRefuseModal = () => {
+    if (saving) return;
+    setRefuseId(null);
+    setRefusalReason('');
+  };
+
+  const handleRefuse = async () => {
+    if (!refuseId || refusalReason.trim().length < 10) {
+      setError('Le motif du refus doit contenir au moins 10 caracteres.');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+    setSuccess('');
+    try {
+      await reclamationService.refuse(refuseId, { refusal_reason: refusalReason.trim() });
+      setSuccess('Reclamation refusee avec succes.');
+      closeRefuseModal();
+      fetchAll();
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Echec du refus de la reclamation.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const toggleExpand = (id) => {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
   const todo = recs.filter((r) => r.status === 'en_attent' || r.status === 'en_cours');
   const resolved = recs.filter((r) => r.status === 'terminee' || r.status === 'rejete');
+  const rejected = recs.filter((r) => r.status === 'rejete');
   const groupedReclamations = groupReclamationsByDate(recs);
 
   return (
@@ -104,22 +144,22 @@ export default function EmployeeDashboard() {
       <div className="mb-8">
         <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
           <span className="p-2 bg-blue-100 text-blue-600 rounded-xl"><WrenchIcon /></span>
-          Mes Taches Assignees
+          {t('employee.title')}
         </h2>
         <p className="text-slate-500 font-medium mt-2 flex items-center gap-2">
           <ClipboardList size={18} />
-          {recs.length} reclamation(s) dans votre departement
+          {t('employee.subtitle', { count: recs.length })}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="bg-white border border-slate-200 rounded-2xl p-6 flex items-center gap-5 shadow-sm">
           <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
             <Clock size={28} />
           </div>
           <div>
             <div className="text-3xl font-black text-slate-900">{todo.length}</div>
-            <div className="text-sm font-bold text-slate-500 uppercase tracking-wider">A traiter</div>
+            <div className="text-sm font-bold text-slate-500 uppercase tracking-wider">{t('employee.todo')}</div>
           </div>
         </div>
 
@@ -129,7 +169,17 @@ export default function EmployeeDashboard() {
           </div>
           <div>
             <div className="text-3xl font-black text-slate-900">{resolved.length}</div>
-            <div className="text-sm font-bold text-slate-500 uppercase tracking-wider">Resolues</div>
+            <div className="text-sm font-bold text-slate-500 uppercase tracking-wider">{t('employee.resolved')}</div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 flex items-center gap-5 shadow-sm">
+          <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+            <XCircle size={28} />
+          </div>
+          <div>
+            <div className="text-3xl font-black text-slate-900">{rejected.length}</div>
+            <div className="text-sm font-bold text-slate-500 uppercase tracking-wider">{t('employee.rejected')}</div>
           </div>
         </div>
       </div>
@@ -159,7 +209,7 @@ export default function EmployeeDashboard() {
             </div>
             <h3 className="text-xl font-black text-slate-900 mb-2">Tout est clair</h3>
             <p className="text-slate-500 font-medium max-w-sm">
-              Aucune reclamation n'a ete affectee a votre departement pour le moment.
+              {t('employee.empty')}
             </p>
           </div>
         ) : (
@@ -234,6 +284,15 @@ export default function EmployeeDashboard() {
                               </div>
                             )}
 
+                            {r.refusal_reason && (
+                              <div className="mb-6">
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-2">{t('employee.refusalReason')}</h4>
+                                <p className="text-red-700 text-sm leading-relaxed bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm">
+                                  {r.refusal_reason}
+                                </p>
+                              </div>
+                            )}
+
                             {r.medias && r.medias.length > 0 && (
                               <div className="mb-6">
                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-1">
@@ -298,6 +357,13 @@ export default function EmployeeDashboard() {
                                 >
                                   <CheckCircle2 size={18} /> Cloturer (Terminee)
                                 </button>
+                                <button
+                                  className="flex-1 flex justify-center items-center gap-2 bg-red-50 border-2 border-red-500 text-red-600 hover:bg-red-600 hover:text-white px-6 py-3 rounded-xl font-black text-sm transition-all disabled:opacity-50"
+                                  onClick={(e) => openRefuseModal(e, r.id)}
+                                  disabled={saving}
+                                >
+                                  <XCircle size={18} /> Refuser
+                                </button>
                               </div>
                             )}
                           </div>
@@ -311,6 +377,37 @@ export default function EmployeeDashboard() {
           </div>
         )}
       </div>
+
+      {refuseId && (
+        <div className="fixed inset-0 z-[120] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-[2rem] shadow-2xl p-6">
+            <h3 className="text-xl font-black text-slate-900">Refuser la reclamation</h3>
+            <p className="text-sm text-slate-500 mt-2">Ajoutez le motif du refus. Le statut deviendra automatiquement "rejete".</p>
+            <textarea
+              className="mt-4 w-full min-h-[150px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-red-400"
+              value={refusalReason}
+              onChange={(e) => setRefusalReason(e.target.value)}
+              placeholder="Expliquez pourquoi la reclamation est refusee..."
+            />
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold"
+                onClick={closeRefuseModal}
+                disabled={saving}
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold disabled:opacity-50"
+                onClick={handleRefuse}
+                disabled={saving}
+              >
+                {saving ? 'En cours...' : 'Confirmer le refus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

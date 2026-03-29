@@ -49,6 +49,7 @@ export const reclamationService = {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   update:  (id, data)     => api.put(`/reclamations/${id}`, data),
+  refuse:  (id, data)     => api.patch(`/reclamations/${id}/refuse`, data),
   delete:  (id)           => api.delete(`/reclamations/${id}`),
 };
 

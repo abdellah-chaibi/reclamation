@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Reclamation;
+use App\Http\Requests\RefuseReclamationRequest;
 use App\Http\Requests\StoreReclamationRequest;
 use App\Http\Requests\UpdateReclamationRequest;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class ReclamationController extends Controller
 {
@@ -70,6 +73,27 @@ class ReclamationController extends Controller
 
         $reclamation->update($data);
         return response()->json($reclamation->load(['medias', 'departement', 'user']));
+    }
+
+    public function refuse(RefuseReclamationRequest $request, Reclamation $reclamation): JsonResponse
+    {
+        if ($reclamation->status === 'rejete') {
+            return response()->json([
+                'message' => 'Cette reclamation est deja rejetee.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($request, $reclamation) {
+            $reclamation->update([
+                'status' => 'rejete',
+                'refusal_reason' => $request->validated('refusal_reason'),
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Reclamation rejetee avec succes.',
+            'data' => $reclamation->fresh()->load(['medias', 'departement', 'user']),
+        ]);
     }
 
     /**

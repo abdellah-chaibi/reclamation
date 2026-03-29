@@ -14,6 +14,7 @@ class Reclamation extends Model
         'title',
         'content',
         'status',
+        'refusal_reason',
         'user_id',
         'departement_id',
         'latitude',

@@ -19,5 +19,6 @@ Route::post('auth/logout', [AuthController::class, 'logout'])->middleware('auth:
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('departements', DepartementController::class);
     Route::apiResource('reclamations', ReclamationController::class);
+    Route::patch('reclamations/{reclamation}/refuse', [ReclamationController::class, 'refuse']);
     Route::apiResource('users', UserController::class);
 });
