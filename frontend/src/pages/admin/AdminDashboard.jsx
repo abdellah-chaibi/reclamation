@@ -33,10 +33,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     Promise.all([userService.getAll(), departementService.getAll(), reclamationService.getAll()])
       .then(([u, d, r]) => {
-        const users = u.data || [];
+        const users = Array.isArray(u.data) ? u.data : (u.data?.data || []);
         setStats({
-          users: Array.isArray(users) ? users.length : (users.total || 0),
-          employees: Array.isArray(users) ? users.filter(x => x.role === 'employe').length : 0,
+          users: u.data?.total || users.length,
+          employees: users.filter(x => x.role === 'employe').length,
           depts: (d.data?.total || (Array.isArray(d.data?.data) ? d.data.data.length : 0)) || 0,
           recs:  (r.data?.total || (Array.isArray(r.data?.data) ? r.data.data.length : 0)) || 0,
         });
@@ -55,7 +55,7 @@ export default function AdminDashboard() {
             <div className="bg-blue-600 p-2 rounded-xl">
               <ShieldCheck className="text-white" size={24} />
             </div>
-            <span className="text-xl font-black tracking-tight text-slate-900">Admin Panel</span>
+            <span className="text-xl font-black tracking-tight text-slate-900">panneau d'administration</span>
           </div>
 
           <nav className="space-y-2">

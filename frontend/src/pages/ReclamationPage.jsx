@@ -166,9 +166,8 @@ export default function ReclamationPage() {
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all shadow-lg ${
-            showForm ? 'bg-slate-200 text-slate-700' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100'
-          }`}
+          className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all shadow-lg ${showForm ? 'bg-slate-200 text-slate-700' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100'
+            }`}
         >
           {showForm ? <X size={20} /> : <Plus size={20} />}
           {showForm ? 'Annuler' : 'Nouvelle reclamation'}
@@ -258,9 +257,13 @@ export default function ReclamationPage() {
 
               <div className="bg-white-900 rounded-[2rem] p-6 text-white shadow-xl">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-black uppercase tracking-widest text-blue-400">Position GPS</span>
-                  <button type="button" onClick={useMyLocation} className="text-xs bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-colors flex items-center gap-2 font-bold">
-                    <MapPin size={14} /> Detecter
+                  <span className="text-sm font-bold text-slate-700 ml-1">Position GPS</span>
+                  <button
+                    type="button"
+                    onClick={useMyLocation}
+                    className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-colors flex items-center gap-2 font-bold"
+                  >
+                    <MapPin size={14} /> Détecter
                   </button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">

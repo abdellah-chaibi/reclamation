@@ -68,7 +68,7 @@ export default function Login() {
             {/* Email Field */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-sm font-semibold text-slate-700 ml-1">
-                Adresse E-mail
+                Adresse e-mail
               </label>
               <div className="relative group">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors">
@@ -93,7 +93,7 @@ export default function Login() {
                 <label htmlFor="password" className="text-sm font-semibold text-slate-700">
                   Mot de passe
                 </label>
-                <Link to="/forgot-password" size="sm" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">
+                <Link to="/forgot-password" hidden size="sm" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">
                   Oublié ?
                 </Link>
               </div>

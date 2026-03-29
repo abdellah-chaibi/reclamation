@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { reclamationService, departementService } from '../../services/api';
+import { reclamationService, departementService, userService } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { 
@@ -10,13 +10,14 @@ import {
 const STATUSES = [
   { value: 'en_attent', label: 'En Attente' },
   { value: 'en_cours',  label: 'En Cours' },
-  { value: 'traite',    label: 'Traitée' },
+  { value: 'terminee',    label: 'Terminée' },
   { value: 'rejete',    label: 'Rejetée' },
 ];
 
 export default function AdminReclamations() {
   const [recs, setRecs]   = useState([]);
   const [depts, setDepts] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
@@ -28,9 +29,19 @@ export default function AdminReclamations() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [rRes, dRes] = await Promise.all([reclamationService.getAll(), departementService.getAll()]);
-      const r = rRes.data?.data || rRes.data || []; setRecs(Array.isArray(r) ? r : []);
+      const [rRes, dRes, uRes] = await Promise.all([
+        reclamationService.getAll(),
+        departementService.getAll(),
+        userService.getAll(),
+      ]);
+      const r = rRes.data?.data || rRes.data || [];
+      const sortedRecs = Array.isArray(r)
+        ? [...r].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        : [];
+      setRecs(sortedRecs);
       const d = dRes.data?.data || dRes.data || []; setDepts(Array.isArray(d) ? d : []);
+      const u = Array.isArray(uRes.data) ? uRes.data : (uRes.data?.data || []);
+      setUsers(Array.isArray(u) ? u : []);
     } catch { setError('Échec du chargement des réclamations.'); }
     finally { setLoading(false); }
   };
@@ -38,7 +49,8 @@ export default function AdminReclamations() {
   useEffect(() => { fetchAll(); }, []);
 
   const handleAssign = async (id) => {
-    if (!editDept) return;
+    const currentReclamation = recs.find((rec) => rec.id === id);
+    if (!editDept || currentReclamation?.status !== 'en_attent') return;
     setSaving(true);
     try { 
       await reclamationService.update(id, { departement_id: parseInt(editDept) }); 
@@ -53,6 +65,14 @@ export default function AdminReclamations() {
     const matchDept = !deptFilter || String(r.departement_id) === deptFilter;
     return matchStatus && matchDept;
   });
+
+  const getCitoyenName = (reclamation) => {
+    if (reclamation.user?.name) return reclamation.user.name;
+    if (reclamation.citoyen?.name) return reclamation.citoyen.name;
+
+    const matchedUser = users.find((user) => String(user.id) === String(reclamation.user_id));
+    return matchedUser?.name || `ID #${reclamation.user_id}`;
+  };
 
   return (
     <div className="animate-in fade-in duration-500 pb-10">
@@ -115,7 +135,11 @@ export default function AdminReclamations() {
                   <tr>
                     <td colSpan={5} className="px-6 py-20 text-center text-slate-400 italic">Aucune réclamation trouvée.</td>
                   </tr>
-                ) : filtered.map(r => (
+                ) : filtered.map(r => {
+                  const canAssign = r.status === 'en_attent';
+                  const citoyenName = getCitoyenName(r);
+
+                  return (
                   <tr key={r.id} className="hover:bg-slate-50/30 transition-colors">
                     <td className="px-6 py-4 text-xs font-bold text-slate-400">#{r.id}</td>
                     <td className="px-6 py-4">
@@ -130,7 +154,7 @@ export default function AdminReclamations() {
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-                          <User size={12} className="text-slate-300" /> ID #{r.user_id}
+                          <User size={12} className="text-slate-300" /> {citoyenName}
                         </div>
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
                           <Building2 size={12} />
@@ -142,7 +166,7 @@ export default function AdminReclamations() {
                       <StatusBadge status={r.status} />
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {editId === r.id ? (
+                      {editId === r.id && canAssign ? (
                         <div className="flex items-center justify-end gap-1 animate-in zoom-in-95 duration-200">
                           <select 
                             className="text-[11px] font-bold px-2 py-1.5 bg-slate-100 border border-slate-200 rounded-lg outline-none focus:border-blue-400"
@@ -168,15 +192,25 @@ export default function AdminReclamations() {
                         </div>
                       ) : (
                         <button 
-                          className="px-4 py-1.5 text-[11px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-600 hover:text-white transition-all"
-                          onClick={() => { setEditId(r.id); setEditDept(String(r.departement_id)); }}
+                          className={`px-4 py-1.5 text-[11px] font-black uppercase tracking-wider rounded-xl border transition-all ${
+                            canAssign
+                              ? 'text-blue-600 bg-blue-50 border-blue-100 hover:bg-blue-600 hover:text-white'
+                              : 'text-slate-400 bg-slate-100 border-slate-200 cursor-not-allowed'
+                          }`}
+                          onClick={() => {
+                            if (!canAssign) return;
+                            setEditId(r.id);
+                            setEditDept(String(r.departement_id || ''));
+                          }}
+                          disabled={!canAssign}
+                          title={canAssign ? 'Assigner un departement' : 'Le depechement est autorise uniquement pour les reclamations en attente'}
                         >
                           Dépêcher
                         </button>
                       )}
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>

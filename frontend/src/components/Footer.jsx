@@ -84,7 +84,7 @@ export default function Footer() {
               Localisation
             </p>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              Commune Kasbah Tadla, Rue Mohamed V, Hay Al Idari.
+              Commune Kasbah Tadla, Rue Mohamed V, Hay Al Idari, Kasba Tadla, Beni Mellal.
             </p>
             <a
               href="https://maps.google.com/?q=Commune+Kasbah+Tadla"

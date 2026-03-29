@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   ArrowUpRight
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function AdminOverview({ stats }) {
   const cards = [
@@ -15,28 +16,32 @@ export default function AdminOverview({ stats }) {
       value: stats.users, 
       icon: Users, 
       color: 'blue',
-      description: 'Citoyens inscrits' 
+      description: 'Utilisateurs inscrits',
+      to:"/admin/users"
     },
     { 
       label: 'Départements', 
       value: stats.depts, 
       icon: Building2, 
       color: 'emerald',
-      description: 'Services actifs' 
+      description: 'Services actifs' ,
+      to:"/admin/departements"
     },
     { 
       label: 'Réclamations', 
       value: stats.recs, 
       icon: MessageSquare, 
       color: 'amber',
-      description: 'Total reçus' 
+      description: 'Total reçus' ,
+      to:"/admin/reclamations"
     },
     { 
       label: 'Employés', 
       value: stats.employees, 
       icon: Briefcase, 
       color: 'indigo',
-      description: 'Agents de service' 
+      description: 'Agents des services' ,
+      to:"/admin/employees"
     },
   ];
 
@@ -57,7 +62,7 @@ export default function AdminOverview({ stats }) {
           <div 
             key={idx} 
             className="group bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:border-blue-100 transition-all duration-300 relative overflow-hidden"
-          >
+          ><Link to={card.to}>
             {/* Background Accent */}
             <div className={`absolute -right-4 -top-4 w-24 h-24 bg-${card.color}-50 rounded-full opacity-50 group-hover:scale-110 transition-transform`} />
             
@@ -82,6 +87,7 @@ export default function AdminOverview({ stats }) {
             <div className="absolute bottom-6 right-6 text-slate-200 group-hover:text-blue-500 transition-colors">
               <ArrowUpRight size={20} />
             </div>
+            </Link>
           </div>
         ))}
       </div>

@@ -174,7 +174,7 @@ export default function Employes() {
 
             <button
               onClick={handleOpenCreate}
-              className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-600 transition-all shadow-md active:scale-95 text-sm"
+              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-400 transition-all shadow-md active:scale-95 text-sm"
             >
               <UserPlus size={18} /> <span>Ajouter</span>
             </button>
