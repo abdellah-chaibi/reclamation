@@ -161,6 +161,7 @@ function ChefOverview() {
 
   const todo = recs.filter((item) => ['en_attent', 'en_cours'].includes(item.status));
   const resolved = recs.filter((item) => ['terminee', 'rejete'].includes(item.status));
+  const rejected = recs.filter((item) => item.status === 'rejete');
   const groupedRecs = groupReclamationsByDate(recs, language);
 
   return (
@@ -187,6 +188,15 @@ function ChefOverview() {
               <div>
                 <p className="text-2xl font-black text-slate-900">{resolved.length}</p>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{text.completed}</p>
+              </div>
+            </div>
+            <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm flex items-center gap-4 min-w-[160px]">
+              <div className="bg-red-50 text-red-600 p-3 rounded-xl"><XCircle size={20} /></div>
+              <div>
+                <p className="text-2xl font-black text-slate-900">{rejected.length}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  {getLocalizedText({ ar: 'مرفوضة', fr: 'Refusees' }, language)}
+                </p>
               </div>
             </div>
           </div>
