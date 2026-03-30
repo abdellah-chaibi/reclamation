@@ -150,6 +150,16 @@ class UserController extends Controller
             }
         }
 
+        if (request()->user()->id === $user->id) {
+            return response()->json([
+                'message' => 'Vous ne pouvez pas supprimer votre propre compte.'
+            ], 422);
+        }
+
+        if ($user->role === 'chef_dep') {
+            Departement::where('user_id', $user->id)->update(['user_id' => null]);
+        }
+
         $user->delete();
         return response()->json([
             'message' => 'User deleted'

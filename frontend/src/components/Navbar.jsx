@@ -101,13 +101,13 @@ export default function Navbar() {
           scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-200/50 py-2' : 'bg-transparent py-4'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <Link to="/home" className="flex items-center gap-2 group shrink-0">
+            <Link to="/home" className="group flex min-w-0 items-center gap-2 shrink">
               <div className="p-1 rounded-xl group-hover:scale-105 transition-transform">
                 <img src={logo} className="h-10 w-auto" alt="logo" />
               </div>
-              <span className="text-xl font-black text-slate-900 tracking-tighter">{t('common.siteName')}</span>
+              <span className="truncate text-base font-black tracking-tighter text-slate-900 sm:text-xl">{t('common.siteName')}</span>
             </Link>
 
             <div className="hidden lg:flex items-center gap-1">
@@ -147,7 +147,7 @@ export default function Navbar() {
             </div>
 
             <button
-              className="lg:hidden p-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors shrink-0"
+              className="shrink-0 rounded-xl bg-slate-100 p-2.5 text-slate-600 transition-colors hover:bg-slate-200 lg:hidden"
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label={t('navbar.toggleMenu')}
             >
@@ -157,7 +157,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      <div className="h-[88px] lg:h-[96px] w-full" aria-hidden="true" />
+      <div className="h-[76px] w-full sm:h-[88px] lg:h-[96px]" aria-hidden="true" />
 
       <div
         className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1001] transition-opacity duration-300 lg:hidden ${
@@ -167,7 +167,7 @@ export default function Navbar() {
       />
 
       <div
-        className={`fixed top-0 right-0 h-full w-[280px] bg-white shadow-2xl z-[1002] p-6 transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${
+        className={`fixed top-0 right-0 z-[1002] flex h-full w-full max-w-[320px] flex-col bg-white p-5 shadow-2xl transition-transform duration-300 ease-in-out sm:p-6 lg:hidden ${
           menuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

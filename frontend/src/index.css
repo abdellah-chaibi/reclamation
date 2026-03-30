@@ -46,7 +46,10 @@
 /* ─── Reset & Base ───────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
@@ -55,12 +58,20 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 a { color: var(--primary-light); text-decoration: none; transition: var(--transition); }
 a:hover { color: var(--primary); }
 
 img { max-width: 100%; display: block; }
+input, select, textarea, button { min-width: 0; }
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
 /* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
@@ -221,6 +232,9 @@ tbody tr:last-child td { border-bottom: none; }
 @media (max-width: 600px) {
   .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
   .page-wrapper { padding: 1rem; }
+  .badge { max-width: 100%; white-space: normal; text-align: center; }
+  th, td { padding: 0.75rem; }
+  .modal { padding: 1.25rem; border-radius: 20px; }
 }
 
 /* ─── Section Header ─────────────────────────────────────────────────────────── */
