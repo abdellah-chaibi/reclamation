@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { reclamationService, departementService, userService } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { formatLocalizedDate, getCurrentLanguage, getLocalizedText, translateDepartmentName } from '../../utils/localization';
 import {
   ClipboardList, Building2, Calendar,
   User, Check, X, RefreshCw, AlertCircle,
 } from 'lucide-react';
 
 const STATUSES = [
-  { value: 'en_attent', label: 'En Attente' },
-  { value: 'en_cours', label: 'En Cours' },
-  { value: 'terminee', label: 'Terminee' },
-  { value: 'rejete', label: 'Rejetee' },
+  { value: 'en_attent', label: 'في الانتظار' },
+  { value: 'en_cours', label: 'قيد المعالجة' },
+  { value: 'terminee', label: 'مكتملة' },
+  { value: 'rejete', label: 'مرفوضة' },
 ];
 
 export default function AdminReclamations() {
+  const { i18n } = useTranslation();
   const [recs, setRecs] = useState([]);
   const [depts, setDepts] = useState([]);
   const [users, setUsers] = useState([]);
@@ -25,6 +28,12 @@ export default function AdminReclamations() {
   const [editId, setEditId] = useState(null);
   const [editDept, setEditDept] = useState('');
   const [saving, setSaving] = useState(false);
+  const language = getCurrentLanguage(i18n.language);
+  const text = {
+    allDepartments: getLocalizedText({ ar: 'جميع الأقسام', fr: 'Tous les departements' }, language),
+    unassigned: getLocalizedText({ ar: 'غير معين', fr: 'Non assigne' }, language),
+    assign: getLocalizedText({ ar: 'تعيين...', fr: 'Assigner...' }, language),
+  };
 
   const fetchAll = async () => {
     setLoading(true);
@@ -44,7 +53,7 @@ export default function AdminReclamations() {
       const u = Array.isArray(uRes.data) ? uRes.data : (uRes.data?.data || []);
       setUsers(Array.isArray(u) ? u : []);
     } catch {
-      setError('Echec du chargement des reclamations.');
+      setError('تعذر تحميل الشكايات.');
     } finally {
       setLoading(false);
     }
@@ -65,7 +74,7 @@ export default function AdminReclamations() {
       setEditId(null);
       fetchAll();
     } catch {
-      setError('Echec de la mise a jour du departement.');
+      setError('تعذر تحديث القسم.');
     } finally {
       setSaving(false);
     }
@@ -91,9 +100,9 @@ export default function AdminReclamations() {
         <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             <ClipboardList className="text-blue-600" size={28} />
-            Gestion des Reclamations
+            تدبير الشكايات
           </h2>
-          <p className="text-slate-500 text-sm font-medium">Suivi et distribution des requetes.</p>
+          <p className="text-slate-500 text-sm font-medium">تتبع الطلبات وتوزيعها على المصالح.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -103,7 +112,7 @@ export default function AdminReclamations() {
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             >
-              <option value="">Tous les Statuts</option>
+              <option value="">جميع الحالات</option>
               {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
             <select
@@ -111,8 +120,8 @@ export default function AdminReclamations() {
               value={deptFilter}
               onChange={(e) => setDeptFilter(e.target.value)}
             >
-              <option value="">Tous les Departements</option>
-              {depts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              <option value="">{text.allDepartments}</option>
+              {depts.map((d) => <option key={d.id} value={d.id}>{translateDepartmentName(d.name, language)}</option>)}
             </select>
           </div>
         </div>
@@ -133,16 +142,16 @@ export default function AdminReclamations() {
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-100">
                   <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">ID</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Reclamation</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Auteur & Dep.</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Statut</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">الشكاية</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">صاحب الطلب والقسم</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">الحالة</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">الإجراءات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-20 text-center text-slate-400 italic">Aucune reclamation trouvee.</td>
+                    <td colSpan={5} className="px-6 py-20 text-center text-slate-400 italic">ما كاين حتى شكاية.</td>
                   </tr>
                 ) : filtered.map((r) => {
                   const canAssign = r.status === 'en_attent';
@@ -156,7 +165,7 @@ export default function AdminReclamations() {
                           <p className="font-bold text-slate-900 text-sm mb-1 truncate">{r.title}</p>
                           <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium uppercase">
                             <Calendar size={12} />
-                            {new Date(r.created_at).toLocaleDateString('fr-FR')}
+                            {formatLocalizedDate(r.created_at, language)}
                           </div>
                           {r.refusal_reason && (
                             <p className="mt-2 text-xs text-red-600 line-clamp-2">{r.refusal_reason}</p>
@@ -170,7 +179,7 @@ export default function AdminReclamations() {
                           </div>
                           <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
                             <Building2 size={12} />
-                            {depts.find((d) => d.id === r.departement_id)?.name || 'Non assigne'}
+                            {translateDepartmentName(depts.find((d) => d.id === r.departement_id)?.name, language) || text.unassigned}
                           </div>
                         </div>
                       </td>
@@ -185,8 +194,8 @@ export default function AdminReclamations() {
                               value={editDept}
                               onChange={(e) => setEditDept(e.target.value)}
                             >
-                              <option value="">Assigner...</option>
-                              {depts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                              <option value="">{text.assign}</option>
+                              {depts.map((d) => <option key={d.id} value={d.id}>{translateDepartmentName(d.name, language)}</option>)}
                             </select>
                             <button
                               className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -216,7 +225,7 @@ export default function AdminReclamations() {
                             }}
                             disabled={!canAssign}
                           >
-                            Depecher
+                            توجيه
                           </button>
                         )}
                       </td>
@@ -230,7 +239,7 @@ export default function AdminReclamations() {
       </div>
 
       <p className="mt-6 text-center text-slate-400 text-[11px] font-medium uppercase tracking-widest">
-        Fin de la liste - {filtered.length} reclamations
+        نهاية اللائحة - {filtered.length} شكاية
       </p>
     </div>
   );

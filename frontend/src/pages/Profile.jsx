@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/api';
+import { formatLocalizedDate, translateDepartmentName } from '../utils/localization';
 import {
   User, Mail, Lock, ShieldCheck,
   CreditCard, Calendar, Edit3, Save, AlertCircle, RefreshCw, Briefcase, Star,
 } from 'lucide-react';
 
 export default function Profile() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
@@ -85,8 +86,8 @@ export default function Profile() {
     { label: t('profile.labels.identity'), value: user?.name, icon: <User size={16} /> },
     { label: t('profile.labels.primaryEmail'), value: user?.email, icon: <Mail size={16} /> },
     { label: t('profile.labels.cinLabel'), value: user?.cin || t('profile.labels.empty'), icon: <CreditCard size={16} /> },
-    ...(['chef_dep', 'employe'].includes(user?.role) ? [{ label: t('profile.labels.department'), value: user?.departement?.name || user?.department?.name || t('profile.labels.notAssigned'), icon: <Briefcase size={16} /> }] : []),
-    { label: t('profile.labels.registrationDate'), value: user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : t('profile.labels.empty'), icon: <Calendar size={16} /> },
+    ...(['chef_dep', 'employe'].includes(user?.role) ? [{ label: t('profile.labels.department'), value: translateDepartmentName(user?.departement?.name || user?.department?.name, i18n.language) || t('profile.labels.notAssigned'), icon: <Briefcase size={16} /> }] : []),
+    { label: t('profile.labels.registrationDate'), value: user?.created_at ? formatLocalizedDate(user.created_at, i18n.language, { day: 'numeric', month: 'long', year: 'numeric' }) : t('profile.labels.empty'), icon: <Calendar size={16} /> },
   ];
 
   return (

@@ -7,6 +7,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { formatLocalizedDate, getCurrentLanguage, getLocalizedText } from '../../utils/localization';
 import {
   ClipboardList, CheckCircle2, AlertCircle, ChevronDown,
   ChevronUp, MapPin, Paperclip, Calendar, Clock, CheckCircle,
@@ -20,11 +21,11 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-function groupReclamationsByDate(items) {
+function groupReclamationsByDate(items, language) {
   const sorted = [...items].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   return sorted.reduce((groups, item) => {
-    const key = new Date(item.created_at).toLocaleDateString('fr-FR', {
+    const key = formatLocalizedDate(item.created_at, language, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -40,7 +41,7 @@ function groupReclamationsByDate(items) {
 }
 
 export default function EmployeeDashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [recs, setRecs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +51,31 @@ export default function EmployeeDashboard() {
   const [expandedId, setExpandedId] = useState(null);
   const [refuseId, setRefuseId] = useState(null);
   const [refusalReason, setRefusalReason] = useState('');
+  const language = getCurrentLanguage(i18n.language);
+  const ui = {
+    loadError: getLocalizedText({ ar: 'تعذر تحميل المهام المسندة.', fr: 'Echec du chargement des taches assignees.' }, language),
+    statusUpdated: getLocalizedText({ ar: 'تم تحديث الحالة بنجاح.', fr: 'Statut mis a jour avec succes.' }, language),
+    statusError: getLocalizedText({ ar: 'تعذر تحديث الحالة.', fr: 'Echec de la mise a jour du statut.' }, language),
+    refusalMin: getLocalizedText({ ar: 'خاص سبب الرفض يكون فيه على الأقل 10 أحرف.', fr: 'Le motif du refus doit contenir au moins 10 caracteres.' }, language),
+    refusalSuccess: getLocalizedText({ ar: 'تم رفض الشكاية بنجاح.', fr: 'Reclamation refusee avec succes.' }, language),
+    refusalError: getLocalizedText({ ar: 'تعذر رفض الشكاية.', fr: 'Echec du refus de la reclamation.' }, language),
+    allClear: getLocalizedText({ ar: 'كلشي واضح', fr: 'Tout est clair' }, language),
+    files: getLocalizedText({ ar: 'ملفات', fr: 'Fichier(s)' }, language),
+    startProgress: getLocalizedText({ ar: 'قيد المعالجة', fr: 'En cours' }, language),
+    description: getLocalizedText({ ar: 'الوصف', fr: 'Description' }, language),
+    attachments: getLocalizedText({ ar: 'المرفقات', fr: 'Pieces jointes' }, language),
+    openFile: getLocalizedText({ ar: 'فتح الملف', fr: 'Ouvrir le fichier' }, language),
+    location: getLocalizedText({ ar: 'الموقع', fr: 'Localisation' }, language),
+    markProgress: getLocalizedText({ ar: 'تعليم كقيد المعالجة', fr: 'Marquer "En cours"' }, language),
+    closeDone: getLocalizedText({ ar: 'إغلاق كمكتملة', fr: 'Cloturer (Terminee)' }, language),
+    refuse: getLocalizedText({ ar: 'رفض', fr: 'Refuser' }, language),
+    refuseTitle: getLocalizedText({ ar: 'رفض الشكاية', fr: 'Refuser la reclamation' }, language),
+    refuseHelp: getLocalizedText({ ar: 'كتب سبب الرفض. الحالة غادي تولّي تلقائياً "مرفوضة".', fr: 'Ajoutez le motif du refus. Le statut deviendra automatiquement "rejete".' }, language),
+    refusePlaceholder: getLocalizedText({ ar: 'شرح علاش هاد الشكاية ترفضات...', fr: 'Expliquez pourquoi la reclamation est refusee...' }, language),
+    cancel: getLocalizedText({ ar: 'إلغاء', fr: 'Annuler' }, language),
+    processing: getLocalizedText({ ar: 'جاري المعالجة...', fr: 'En cours...' }, language),
+    confirmRefuse: getLocalizedText({ ar: 'تأكيد الرفض', fr: 'Confirmer le refus' }, language),
+  };
 
   const fetchAll = async () => {
     setLoading(true);
@@ -59,7 +85,7 @@ export default function EmployeeDashboard() {
       const myDeptId = user?.departement_id;
       setRecs(Array.isArray(r) ? r.filter((item) => item.departement_id === myDeptId) : []);
     } catch {
-      setError('Echec du chargement des taches assignees.');
+      setError(ui.loadError);
     } finally {
       setLoading(false);
     }
@@ -86,10 +112,10 @@ export default function EmployeeDashboard() {
     setSuccess('');
     try {
       await reclamationService.update(id, { status: newStatus });
-      setSuccess('Statut mis a jour avec succes.');
+      setSuccess(ui.statusUpdated);
       fetchAll();
     } catch (err) {
-      setError(err?.response?.data?.message || 'Echec de la mise a jour du statut.');
+      setError(err?.response?.data?.message || ui.statusError);
     } finally {
       setSaving(false);
     }
@@ -111,7 +137,7 @@ export default function EmployeeDashboard() {
 
   const handleRefuse = async () => {
     if (!refuseId || refusalReason.trim().length < 10) {
-      setError('Le motif du refus doit contenir au moins 10 caracteres.');
+      setError(ui.refusalMin);
       return;
     }
 
@@ -120,11 +146,11 @@ export default function EmployeeDashboard() {
     setSuccess('');
     try {
       await reclamationService.refuse(refuseId, { refusal_reason: refusalReason.trim() });
-      setSuccess('Reclamation refusee avec succes.');
+      setSuccess(ui.refusalSuccess);
       closeRefuseModal();
       fetchAll();
     } catch (err) {
-      setError(err?.response?.data?.message || 'Echec du refus de la reclamation.');
+      setError(err?.response?.data?.message || ui.refusalError);
     } finally {
       setSaving(false);
     }
@@ -137,7 +163,7 @@ export default function EmployeeDashboard() {
   const todo = recs.filter((r) => r.status === 'en_attent' || r.status === 'en_cours');
   const resolved = recs.filter((r) => r.status === 'terminee' || r.status === 'rejete');
   const rejected = recs.filter((r) => r.status === 'rejete');
-  const groupedReclamations = groupReclamationsByDate(recs);
+  const groupedReclamations = groupReclamationsByDate(recs, language);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 animate-in fade-in duration-500">
@@ -207,7 +233,7 @@ export default function EmployeeDashboard() {
             <div className="w-24 h-24 bg-white border border-slate-200 rounded-full flex items-center justify-center text-4xl shadow-sm mb-6">
               0
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">Tout est clair</h3>
+            <h3 className="text-xl font-black text-slate-900 mb-2">{ui.allClear}</h3>
             <p className="text-slate-500 font-medium max-w-sm">
               {t('employee.empty')}
             </p>
@@ -245,11 +271,11 @@ export default function EmployeeDashboard() {
                             </div>
                             <div className="flex items-center gap-4 text-xs font-semibold text-slate-400">
                               <span className="flex items-center gap-1">
-                                <Calendar size={14} /> {new Date(r.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                <Calendar size={14} /> {formatLocalizedDate(r.created_at, language, { day: 'numeric', month: 'long', year: 'numeric' })}
                               </span>
                               {r.medias?.length > 0 && (
                                 <span className="flex items-center gap-1 text-slate-500">
-                                  <Paperclip size={14} /> {r.medias.length} Fichier(s)
+                                  <Paperclip size={14} /> {r.medias.length} {ui.files}
                                 </span>
                               )}
                             </div>
@@ -263,7 +289,7 @@ export default function EmployeeDashboard() {
                                   disabled={saving || r.status === 'en_cours'}
                                   className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
                                 >
-                                  En Cours
+                                  {ui.startProgress}
                                 </button>
                               </div>
                             )}
@@ -277,7 +303,7 @@ export default function EmployeeDashboard() {
                           <div className="border-t border-slate-100 bg-slate-50/50 p-5 md:px-6 md:py-6 animate-in slide-in-from-top-4 duration-300">
                             {r.content && (
                               <div className="mb-6">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Description</h4>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{ui.description}</h4>
                                 <p className="text-slate-700 text-sm leading-relaxed bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                                   {r.content}
                                 </p>
@@ -296,7 +322,7 @@ export default function EmployeeDashboard() {
                             {r.medias && r.medias.length > 0 && (
                               <div className="mb-6">
                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-1">
-                                  <Paperclip size={12} /> Pieces jointes ({r.medias.length})
+                                  <Paperclip size={12} /> {ui.attachments} ({r.medias.length})
                                 </h4>
                                 <div className="flex flex-wrap gap-3">
                                   {r.medias.map((m) => (
@@ -309,7 +335,7 @@ export default function EmployeeDashboard() {
                                       className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 rounded-xl text-sm font-bold text-slate-600 transition-all shadow-sm"
                                     >
                                       <Paperclip size={16} className="text-slate-400" />
-                                      Ouvrir le fichier
+                                      {ui.openFile}
                                     </a>
                                   ))}
                                 </div>
@@ -319,7 +345,7 @@ export default function EmployeeDashboard() {
                             {r.latitude && r.longitude && (
                               <div className="mb-6">
                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-1">
-                                  <MapPin size={12} /> Localisation
+                                  <MapPin size={12} /> {ui.location}
                                 </h4>
                                 <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm z-0">
                                   <MapContainer
@@ -347,7 +373,7 @@ export default function EmployeeDashboard() {
                                   onClick={(e) => handleStatusUpdate(e, r.id, 'en_cours')}
                                   disabled={saving || r.status === 'en_cours'}
                                 >
-                                  <Clock size={18} /> Marquer "En Cours"
+                                  <Clock size={18} /> {ui.markProgress}
                                 </button>
 
                                 <button
@@ -355,14 +381,14 @@ export default function EmployeeDashboard() {
                                   onClick={(e) => handleStatusUpdate(e, r.id, 'terminee')}
                                   disabled={saving}
                                 >
-                                  <CheckCircle2 size={18} /> Cloturer (Terminee)
+                                  <CheckCircle2 size={18} /> {ui.closeDone}
                                 </button>
                                 <button
                                   className="flex-1 flex justify-center items-center gap-2 bg-red-50 border-2 border-red-500 text-red-600 hover:bg-red-600 hover:text-white px-6 py-3 rounded-xl font-black text-sm transition-all disabled:opacity-50"
                                   onClick={(e) => openRefuseModal(e, r.id)}
                                   disabled={saving}
                                 >
-                                  <XCircle size={18} /> Refuser
+                                  <XCircle size={18} /> {ui.refuse}
                                 </button>
                               </div>
                             )}
@@ -381,13 +407,13 @@ export default function EmployeeDashboard() {
       {refuseId && (
         <div className="fixed inset-0 z-[120] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-xl bg-white border border-slate-200 rounded-[2rem] shadow-2xl p-6">
-            <h3 className="text-xl font-black text-slate-900">Refuser la reclamation</h3>
-            <p className="text-sm text-slate-500 mt-2">Ajoutez le motif du refus. Le statut deviendra automatiquement "rejete".</p>
+            <h3 className="text-xl font-black text-slate-900">{ui.refuseTitle}</h3>
+            <p className="text-sm text-slate-500 mt-2">{ui.refuseHelp}</p>
             <textarea
               className="mt-4 w-full min-h-[150px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-red-400"
               value={refusalReason}
               onChange={(e) => setRefusalReason(e.target.value)}
-              placeholder="Expliquez pourquoi la reclamation est refusee..."
+              placeholder={ui.refusePlaceholder}
             />
             <div className="mt-5 flex justify-end gap-3">
               <button
@@ -395,14 +421,14 @@ export default function EmployeeDashboard() {
                 onClick={closeRefuseModal}
                 disabled={saving}
               >
-                Annuler
+                {ui.cancel}
               </button>
               <button
                 className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold disabled:opacity-50"
                 onClick={handleRefuse}
                 disabled={saving}
               >
-                {saving ? 'En cours...' : 'Confirmer le refus'}
+                {saving ? ui.processing : ui.confirmRefuse}
               </button>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { reclamationService, departementService } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { formatLocalizedDate, translateDepartmentName } from '../utils/localization';
 import {
   Plus, X, MapPin, Paperclip, Send, Building2,
   Calendar, AlertCircle, CheckCircle2, FileText,
@@ -19,11 +20,11 @@ const emptyForm = {
   media: null,
 };
 
-function groupReclamationsByDate(items) {
+function groupReclamationsByDate(items, language) {
   const sorted = [...items].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   return sorted.reduce((groups, item) => {
-    const key = new Date(item.created_at).toLocaleDateString('fr-FR', {
+    const key = formatLocalizedDate(item.created_at, language, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -39,7 +40,7 @@ function groupReclamationsByDate(items) {
 }
 
 export default function ReclamationPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const fileInputRef = useRef(null);
 
@@ -54,7 +55,7 @@ export default function ReclamationPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [showForm, setShowForm] = useState(false);
 
-  const groupedReclamations = groupReclamationsByDate(reclamations);
+  const groupedReclamations = groupReclamationsByDate(reclamations, i18n.language);
 
   const fetchData = async () => {
     setLoadingList(true);
@@ -225,7 +226,7 @@ export default function ReclamationPage() {
                   onChange={handleChange}
                 >
                   <option value="">{t('reclamations.form.departmentPlaceholder')}</option>
-                  {departements.map((dept) => <option key={dept.id} value={dept.id}>{dept.name}</option>)}
+                  {departements.map((dept) => <option key={dept.id} value={dept.id}>{translateDepartmentName(dept.name, i18n.language)}</option>)}
                 </select>
                 {errors.departement_id && <p className="text-red-500 text-xs font-bold mt-1">{errors.departement_id}</p>}
               </div>
@@ -335,10 +336,10 @@ export default function ReclamationPage() {
 
                         <div className="flex flex-wrap gap-4 pt-2">
                           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-lg">
-                            <Building2 size={14} /> {reclamation.departement?.name || t('reclamations.general')}
+                            <Building2 size={14} /> {translateDepartmentName(reclamation.departement?.name, i18n.language) || t('reclamations.general')}
                           </div>
                           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-lg">
-                            <Calendar size={14} /> {new Date(reclamation.created_at).toLocaleDateString('fr-FR')}
+                            <Calendar size={14} /> {formatLocalizedDate(reclamation.created_at, i18n.language)}
                           </div>
                           {reclamation.latitude && (
                             <div className="flex items-center gap-1.5 text-xs font-bold text-blue-500 bg-blue-50 px-3 py-1.5 rounded-lg">
