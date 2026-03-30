@@ -8,6 +8,7 @@ use App\Http\Requests\StoreReclamationRequest;
 use App\Http\Requests\UpdateReclamationRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class ReclamationController extends Controller
 {
@@ -16,11 +17,11 @@ class ReclamationController extends Controller
      */
     public function index()
     {
-        $reclamation = Reclamation::with(['medias', 'departement', 'user'])->paginate(15);
+        $reclamation = Reclamation::with(['medias', 'departement', 'user'])->get();
         return response()->json($reclamation);
     }
 
- 
+
 
     /**
      * Store a newly created resource in storage.
@@ -55,7 +56,7 @@ class ReclamationController extends Controller
         return response()->json($reclamation->load(['medias', 'departement', 'user']));
     }
 
-   
+
 
     /**
      * Update the specified resource in storage.

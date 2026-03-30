@@ -3,17 +3,52 @@ import { useTranslation } from 'react-i18next';
 import { reclamationService, departementService, userService } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { formatLocalizedDate, getCurrentLanguage, getLocalizedText, translateDepartmentName } from '../../utils/localization';
 import {
-  ClipboardList, Building2, Calendar,
-  User, Check, X, RefreshCw, AlertCircle,
+  formatLocalizedDate,
+  getCurrentLanguage,
+  getLocalizedText,
+  translateDepartmentName,
+} from '../../utils/localization';
+import {
+  ClipboardList,
+  Building2,
+  Calendar,
+  User,
+  Check,
+  X,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 
 const STATUSES = [
-  { value: 'en_attent', label: 'في الانتظار' },
-  { value: 'en_cours', label: 'قيد المعالجة' },
-  { value: 'terminee', label: 'مكتملة' },
-  { value: 'rejete', label: 'مرفوضة' },
+  {
+    value: 'en_attent',
+    label: {
+      ar: 'في الانتظار',
+      fr: 'En attente',
+    },
+  },
+  {
+    value: 'en_cours',
+    label: {
+      ar: 'قيد المعالجة',
+      fr: 'En cours',
+    },
+  },
+  {
+    value: 'terminee',
+    label: {
+      ar: 'مكتملة',
+      fr: 'Terminee',
+    },
+  },
+  {
+    value: 'rejete',
+    label: {
+      ar: 'مرفوضة',
+      fr: 'Rejetee',
+    },
+  },
 ];
 
 export default function AdminReclamations() {
@@ -28,40 +63,61 @@ export default function AdminReclamations() {
   const [editId, setEditId] = useState(null);
   const [editDept, setEditDept] = useState('');
   const [saving, setSaving] = useState(false);
+
   const language = getCurrentLanguage(i18n.language);
   const text = {
+    title: getLocalizedText({ ar: 'تدبير الشكايات', fr: 'Gestion des reclamations' }, language),
+    subtitle: getLocalizedText(
+      { ar: 'تتبع الطلبات وتوزيعها على المصالح.', fr: 'Suivez les demandes et repartissez-les entre les services.' },
+      language,
+    ),
+    loadError: getLocalizedText({ ar: 'تعذر تحميل الشكايات.', fr: 'Impossible de charger les reclamations.' }, language),
+    updateError: getLocalizedText({ ar: 'تعذر تحديث القسم.', fr: 'Impossible de mettre a jour le departement.' }, language),
+    allStatuses: getLocalizedText({ ar: 'جميع الحالات', fr: 'Tous les statuts' }, language),
     allDepartments: getLocalizedText({ ar: 'جميع الأقسام', fr: 'Tous les departements' }, language),
     unassigned: getLocalizedText({ ar: 'غير معين', fr: 'Non assigne' }, language),
-    assign: getLocalizedText({ ar: 'تعيين...', fr: 'Assigner...' }, language),
-  };
-
-  const fetchAll = async () => {
-    setLoading(true);
-    try {
-      const [rRes, dRes, uRes] = await Promise.all([
-        reclamationService.getAll(),
-        departementService.getAll(),
-        userService.getAll(),
-      ]);
-      const r = rRes.data?.data || rRes.data || [];
-      const sortedRecs = Array.isArray(r)
-        ? [...r].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        : [];
-      setRecs(sortedRecs);
-      const d = dRes.data?.data || dRes.data || [];
-      setDepts(Array.isArray(d) ? d : []);
-      const u = Array.isArray(uRes.data) ? uRes.data : (uRes.data?.data || []);
-      setUsers(Array.isArray(u) ? u : []);
-    } catch {
-      setError('تعذر تحميل الشكايات.');
-    } finally {
-      setLoading(false);
-    }
+    assignPlaceholder: getLocalizedText({ ar: 'تعيين...', fr: 'Assigner...' }, language),
+    complaint: getLocalizedText({ ar: 'الشكاية', fr: 'Reclamation' }, language),
+    requesterDepartment: getLocalizedText({ ar: 'صاحب الطلب والقسم', fr: 'Demandeur et departement' }, language),
+    status: getLocalizedText({ ar: 'الحالة', fr: 'Statut' }, language),
+    actions: getLocalizedText({ ar: 'الإجراءات', fr: 'Actions' }, language),
+    empty: getLocalizedText({ ar: 'ما كاين حتى شكاية.', fr: 'Aucune reclamation.' }, language),
+    assignAction: getLocalizedText({ ar: 'توجيه', fr: 'Affecter' }, language),
+    footer: getLocalizedText({ ar: 'نهاية اللائحة', fr: 'Fin de la liste' }, language),
+    countLabel: getLocalizedText({ ar: 'شكاية', fr: 'reclamation(s)' }, language),
   };
 
   useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        const [rRes, dRes, uRes] = await Promise.all([
+          reclamationService.getAll(),
+          departementService.getAll(),
+          userService.getAll(),
+        ]);
+
+        const r = rRes.data?.data || rRes.data || [];
+        const sortedRecs = Array.isArray(r)
+          ? [...r].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+          : [];
+        setRecs(sortedRecs);
+
+        const d = dRes.data?.data || dRes.data || [];
+        setDepts(Array.isArray(d) ? d : []);
+
+        const u = Array.isArray(uRes.data) ? uRes.data : (uRes.data?.data || []);
+        setUsers(Array.isArray(u) ? u : []);
+        setError('');
+      } catch {
+        setError(text.loadError);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchAll();
-  }, []);
+  }, [text.loadError]);
 
   const handleAssign = async (id) => {
     const currentReclamation = recs.find((rec) => rec.id === id);
@@ -69,20 +125,27 @@ export default function AdminReclamations() {
 
     setSaving(true);
     setError('');
+
     try {
       await reclamationService.update(id, { departement_id: parseInt(editDept, 10) });
       setEditId(null);
-      fetchAll();
+
+      const refreshedReclamations = await reclamationService.getAll();
+      const items = refreshedReclamations.data?.data || refreshedReclamations.data || [];
+      const sortedItems = Array.isArray(items)
+        ? [...items].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        : [];
+      setRecs(sortedItems);
     } catch {
-      setError('تعذر تحديث القسم.');
+      setError(text.updateError);
     } finally {
       setSaving(false);
     }
   };
 
-  const filtered = recs.filter((r) => {
-    const matchStatus = !filter || r.status === filter;
-    const matchDept = !deptFilter || String(r.departement_id) === deptFilter;
+  const filtered = recs.filter((reclamation) => {
+    const matchStatus = !filter || reclamation.status === filter;
+    const matchDept = !deptFilter || String(reclamation.departement_id) === deptFilter;
     return matchStatus && matchDept;
   });
 
@@ -96,150 +159,179 @@ export default function AdminReclamations() {
 
   return (
     <div className="animate-in fade-in duration-500 pb-10">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+      <div className="mb-8 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+          <h2 className="flex items-center gap-3 text-2xl font-black tracking-tight text-slate-900">
             <ClipboardList className="text-blue-600" size={28} />
-            تدبير الشكايات
+            {text.title}
           </h2>
-          <p className="text-slate-500 text-sm font-medium">تتبع الطلبات وتوزيعها على المصالح.</p>
+          <p className="text-sm font-medium text-slate-500">{text.subtitle}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-white border border-slate-200 p-1 rounded-2xl shadow-sm">
+          <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
             <select
-              className="bg-transparent px-3 py-1.5 outline-none text-xs font-bold text-slate-600 border-r border-slate-100"
+              className="border-r border-slate-100 bg-transparent px-3 py-1.5 text-xs font-bold text-slate-600 outline-none"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             >
-              <option value="">جميع الحالات</option>
-              {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              <option value="">{text.allStatuses}</option>
+              {STATUSES.map((statusOption) => (
+                <option key={statusOption.value} value={statusOption.value}>
+                  {statusOption.label[language]}
+                </option>
+              ))}
             </select>
+
             <select
-              className="bg-transparent px-3 py-1.5 outline-none text-xs font-bold text-slate-600"
+              className="bg-transparent px-3 py-1.5 text-xs font-bold text-slate-600 outline-none"
               value={deptFilter}
               onChange={(e) => setDeptFilter(e.target.value)}
             >
               <option value="">{text.allDepartments}</option>
-              {depts.map((d) => <option key={d.id} value={d.id}>{translateDepartmentName(d.name, language)}</option>)}
+              {depts.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {translateDepartmentName(department.name, language)}
+                </option>
+              ))}
             </select>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl flex items-center gap-3 text-red-700 font-bold animate-in slide-in-from-top-4">
-          <AlertCircle size={18} /> {error}
+        <div className="animate-in slide-in-from-top-4 mb-6 flex items-center gap-3 rounded-r-xl border-l-4 border-red-500 bg-red-50 p-4 font-bold text-red-700">
+          <AlertCircle size={18} />
+          {error}
         </div>
       )}
 
-      <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
         {loading ? (
-          <div className="py-20 flex justify-center"><LoadingSpinner /></div>
+          <div className="flex justify-center py-20">
+            <LoadingSpinner />
+          </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-100">
+                <tr className="border-b border-slate-100 bg-slate-50/80">
                   <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">ID</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">الشكاية</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">صاحب الطلب والقسم</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">الحالة</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">الإجراءات</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{text.complaint}</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{text.requesterDepartment}</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">{text.status}</th>
+                  <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">{text.actions}</th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-slate-50">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-20 text-center text-slate-400 italic">ما كاين حتى شكاية.</td>
+                    <td colSpan={5} className="px-6 py-20 text-center italic text-slate-400">
+                      {text.empty}
+                    </td>
                   </tr>
-                ) : filtered.map((r) => {
-                  const canAssign = r.status === 'en_attent';
-                  const citoyenName = getCitoyenName(r);
+                ) : (
+                  filtered.map((reclamation) => {
+                    const canAssign = reclamation.status === 'en_attent';
+                    const citoyenName = getCitoyenName(reclamation);
+                    const assignedDepartment = depts.find((department) => department.id === reclamation.departement_id);
 
-                  return (
-                    <tr key={r.id} className="hover:bg-slate-50/30 transition-colors">
-                      <td className="px-6 py-4 text-xs font-bold text-slate-400">#{r.id}</td>
-                      <td className="px-6 py-4">
-                        <div className="max-w-xs sm:max-w-md">
-                          <p className="font-bold text-slate-900 text-sm mb-1 truncate">{r.title}</p>
-                          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium uppercase">
-                            <Calendar size={12} />
-                            {formatLocalizedDate(r.created_at, language)}
+                    return (
+                      <tr key={reclamation.id} className="transition-colors hover:bg-slate-50/30">
+                        <td className="px-6 py-4 text-xs font-bold text-slate-400">#{reclamation.id}</td>
+
+                        <td className="px-6 py-4">
+                          <div className="max-w-xs sm:max-w-md">
+                            <p className="mb-1 truncate text-sm font-bold text-slate-900">{reclamation.title}</p>
+                            <div className="flex items-center gap-2 text-[10px] font-medium uppercase text-slate-400">
+                              <Calendar size={12} />
+                              {formatLocalizedDate(reclamation.created_at, language)}
+                            </div>
+                            {reclamation.refusal_reason && (
+                              <p className="mt-2 line-clamp-2 text-xs text-red-600">{reclamation.refusal_reason}</p>
+                            )}
                           </div>
-                          {r.refusal_reason && (
-                            <p className="mt-2 text-xs text-red-600 line-clamp-2">{r.refusal_reason}</p>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                              <User size={12} className="text-slate-300" />
+                              {citoyenName}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                              <Building2 size={12} />
+                              {translateDepartmentName(assignedDepartment?.name, language) || text.unassigned}
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4 text-center">
+                          <StatusBadge status={reclamation.status} />
+                        </td>
+
+                        <td className="px-6 py-4 text-right">
+                          {editId === reclamation.id && canAssign ? (
+                            <div className="animate-in zoom-in-95 flex items-center justify-end gap-1 duration-200">
+                              <select
+                                className="rounded-lg border border-slate-200 bg-slate-100 px-2 py-1.5 text-[11px] font-bold outline-none focus:border-blue-400"
+                                value={editDept}
+                                onChange={(e) => setEditDept(e.target.value)}
+                              >
+                                <option value="">{text.assignPlaceholder}</option>
+                                {depts.map((department) => (
+                                  <option key={department.id} value={department.id}>
+                                    {translateDepartmentName(department.name, language)}
+                                  </option>
+                                ))}
+                              </select>
+
+                              <button
+                                className="rounded-lg bg-blue-600 p-1.5 text-white transition-colors hover:bg-blue-700"
+                                onClick={() => handleAssign(reclamation.id)}
+                                disabled={saving}
+                              >
+                                {saving ? <RefreshCw className="animate-spin" size={14} /> : <Check size={14} />}
+                              </button>
+
+                              <button
+                                className="rounded-lg bg-slate-200 p-1.5 text-slate-600 transition-colors hover:bg-slate-300"
+                                onClick={() => setEditId(null)}
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              className={`rounded-xl border px-4 py-1.5 text-[11px] font-black uppercase tracking-wider transition-all ${
+                                canAssign
+                                  ? 'border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white'
+                                  : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+                              }`}
+                              onClick={() => {
+                                if (!canAssign) return;
+                                setEditId(reclamation.id);
+                                setEditDept(String(reclamation.departement_id || ''));
+                              }}
+                              disabled={!canAssign}
+                            >
+                              {text.assignAction}
+                            </button>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-                            <User size={12} className="text-slate-300" /> {citoyenName}
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                            <Building2 size={12} />
-                            {translateDepartmentName(depts.find((d) => d.id === r.departement_id)?.name, language) || text.unassigned}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <StatusBadge status={r.status} />
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        {editId === r.id && canAssign ? (
-                          <div className="flex items-center justify-end gap-1 animate-in zoom-in-95 duration-200">
-                            <select
-                              className="text-[11px] font-bold px-2 py-1.5 bg-slate-100 border border-slate-200 rounded-lg outline-none focus:border-blue-400"
-                              value={editDept}
-                              onChange={(e) => setEditDept(e.target.value)}
-                            >
-                              <option value="">{text.assign}</option>
-                              {depts.map((d) => <option key={d.id} value={d.id}>{translateDepartmentName(d.name, language)}</option>)}
-                            </select>
-                            <button
-                              className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                              onClick={() => handleAssign(r.id)}
-                              disabled={saving}
-                            >
-                              {saving ? <RefreshCw className="animate-spin" size={14} /> : <Check size={14} />}
-                            </button>
-                            <button
-                              className="p-1.5 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors"
-                              onClick={() => setEditId(null)}
-                            >
-                              <X size={14} />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            className={`px-4 py-1.5 text-[11px] font-black uppercase tracking-wider rounded-xl border transition-all ${
-                              canAssign
-                                ? 'text-blue-600 bg-blue-50 border-blue-100 hover:bg-blue-600 hover:text-white'
-                                : 'text-slate-400 bg-slate-100 border-slate-200 cursor-not-allowed'
-                            }`}
-                            onClick={() => {
-                              if (!canAssign) return;
-                              setEditId(r.id);
-                              setEditDept(String(r.departement_id || ''));
-                            }}
-                            disabled={!canAssign}
-                          >
-                            توجيه
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      <p className="mt-6 text-center text-slate-400 text-[11px] font-medium uppercase tracking-widest">
-        نهاية اللائحة - {filtered.length} شكاية
+      <p className="mt-6 text-center text-[11px] font-medium uppercase tracking-widest text-slate-400">
+        {text.footer} - {filtered.length} {text.countLabel}
       </p>
     </div>
   );

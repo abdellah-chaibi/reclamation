@@ -38,7 +38,7 @@ class AuthController extends Controller
             'email' => ['required', 'email'],
             'password'=> 'required|string|min:8'
         ]);
-    
+
         if (!Auth::attempt($credentials)) {
             return response()->json([
                 'message' => 'Invalid credentials'
@@ -47,7 +47,7 @@ class AuthController extends Controller
         //$user = $request->user();
         $user = $request->user()->load('departement'); // already authenticated user
         $token = $user->createToken('loginToken')->plainTextToken;
-    
+
         return response()->json([
             'message' => 'success',
             'user' => $user,
@@ -56,7 +56,7 @@ class AuthController extends Controller
     }
 
     public function logout(Request $request){
-          $request->user()->currentAccessToken->delete();
+          $request->user()->currentAccessToken()->delete();
           return response()->json([
             'message'=> 'Loggout with success.'
             ]);
