@@ -18,6 +18,13 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 
+function extractCollectionCount(payload) {
+  if (Array.isArray(payload)) return payload.length;
+  if (typeof payload?.total === 'number') return payload.total;
+  if (Array.isArray(payload?.data)) return payload.data.length;
+  return 0;
+}
+
 export default function AdminDashboard() {
   const { i18n } = useTranslation();
   const location = useLocation();
@@ -40,10 +47,10 @@ export default function AdminDashboard() {
       .then(([u, d, r]) => {
         const users = Array.isArray(u.data) ? u.data : (u.data?.data || []);
         setStats({
-          users: u.data?.total || users.length,
+          users: extractCollectionCount(u.data),
           employees: users.filter((x) => x.role === 'employe').length,
-          depts: (d.data?.total || (Array.isArray(d.data?.data) ? d.data.data.length : 0)) || 0,
-          recs: (r.data?.total || (Array.isArray(r.data?.data) ? r.data.data.length : 0)) || 0,
+          depts: extractCollectionCount(d.data),
+          recs: extractCollectionCount(r.data),
         });
       })
       .catch(() => {})
