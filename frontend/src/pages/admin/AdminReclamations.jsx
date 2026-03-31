@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { reclamationService, departementService, userService } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PaginationControls from '../../components/PaginationControls';
 import {
   formatLocalizedDate,
   getCurrentLanguage,
@@ -63,9 +64,16 @@ export default function AdminReclamations() {
   const [editId, setEditId] = useState(null);
   const [editDept, setEditDept] = useState('');
   const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   const language = getCurrentLanguage(i18n.language);
   const text = {
+    page: getLocalizedText({ ar: 'ØµÙØ­Ø©', fr: 'Page' }, language),
+    of: getLocalizedText({ ar: 'Ù…Ù†', fr: 'sur' }, language),
+    results: getLocalizedText({ ar: 'Ù†ØªØ§Ø¦Ø¬', fr: 'resultats' }, language),
+    previous: getLocalizedText({ ar: 'Ø§Ù„Ø³Ø§Ø¨Ù‚', fr: 'Precedent' }, language),
+    next: getLocalizedText({ ar: 'Ø§Ù„ØªØ§Ù„ÙŠ', fr: 'Suivant' }, language),
     title: getLocalizedText({ ar: 'تدبير الشكايات', fr: 'Gestion des reclamations' }, language),
     subtitle: getLocalizedText(
       { ar: 'تتبع الطلبات وتوزيعها على المصالح.', fr: 'Suivez les demandes et repartissez-les entre les services.' },
@@ -148,6 +156,17 @@ export default function AdminReclamations() {
     const matchDept = !deptFilter || String(reclamation.departement_id) === deptFilter;
     return matchStatus && matchDept;
   });
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const currentItems = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, deptFilter]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, Math.max(totalPages, 1)));
+  }, [totalPages]);
 
   const getCitoyenName = (reclamation) => {
     if (reclamation.user?.name) return reclamation.user.name;
@@ -232,7 +251,7 @@ export default function AdminReclamations() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((reclamation) => {
+                  currentItems.map((reclamation) => {
                     const canAssign = reclamation.status === 'en_attent';
                     const citoyenName = getCitoyenName(reclamation);
                     const assignedDepartment = depts.find((department) => department.id === reclamation.departement_id);
@@ -330,9 +349,26 @@ export default function AdminReclamations() {
         )}
       </div>
 
-      <p className="mt-6 text-center text-[11px] font-medium uppercase tracking-widest text-slate-400">
-        {text.footer} - {filtered.length} {text.countLabel}
-      </p>
+      {!loading && filtered.length > 0 ? (
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filtered.length}
+          onPageChange={setCurrentPage}
+          labels={{
+            page: 'Page',
+            of: 'sur',
+            results: 'resultats',
+            previous: 'Precedent',
+            next: 'Suivant',
+          }}
+          className="mt-6 rounded-3xl border border-slate-200 bg-white shadow-sm"
+        />
+      ) : (
+        <p className="mt-6 text-center text-[11px] font-medium uppercase tracking-widest text-slate-400">
+          {text.footer} - {filtered.length} {text.countLabel}
+        </p>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { userService, departementService } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PaginationControls from '../../components/PaginationControls';
 import { getCurrentLanguage, getLocalizedText, translateDepartmentName } from '../../utils/localization';
 import {
   Users, UserPlus, Search, Edit2, Trash2,
@@ -26,8 +27,15 @@ export default function AdminEmployees() {
   const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
   const language = getCurrentLanguage(i18n.language);
   const text = {
+    page: getLocalizedText({ ar: 'ØµÙØ­Ø©', fr: 'Page' }, language),
+    of: getLocalizedText({ ar: 'Ù…Ù†', fr: 'sur' }, language),
+    results: getLocalizedText({ ar: 'Ù†ØªØ§Ø¦Ø¬', fr: 'resultats' }, language),
+    previous: getLocalizedText({ ar: 'Ø§Ù„Ø³Ø§Ø¨Ù‚', fr: 'Precedent' }, language),
+    next: getLocalizedText({ ar: 'Ø§Ù„ØªØ§Ù„ÙŠ', fr: 'Suivant' }, language),
     title: getLocalizedText({ ar: 'الموظفون', fr: 'Employes' }, language),
     members: getLocalizedText({ ar: 'أعضاء مسجلون', fr: 'membres enregistres' }, language),
     search: getLocalizedText({ ar: 'بحث...', fr: 'Rechercher...' }, language),
@@ -63,6 +71,10 @@ export default function AdminEmployees() {
       return () => clearTimeout(timer);
     }
   }, [success, error]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, deptFilter]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -144,6 +156,13 @@ export default function AdminEmployees() {
     return matchesSearch && matchesDept;
   });
 
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const currentItems = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, Math.max(totalPages, 1)));
+  }, [totalPages]);
+
   return (
     <div className="animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
@@ -219,7 +238,7 @@ export default function AdminEmployees() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filtered.map((emp) => (
+                {currentItems.map((emp) => (
                   <tr key={emp.id} className="hover:bg-slate-50/30 transition-colors">
                     <td className="px-6 py-4 text-xs font-bold text-slate-400">#{emp.id}</td>
                     <td className="px-6 py-4">
@@ -253,6 +272,22 @@ export default function AdminEmployees() {
               </tbody>
             </table>
           </div>
+        )}
+
+        {!loading && filtered.length > 0 && (
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filtered.length}
+            onPageChange={setCurrentPage}
+            labels={{
+              page: 'Page',
+              of: 'sur',
+              results: 'resultats',
+              previous: 'Precedent',
+              next: 'Suivant',
+            }}
+          />
         )}
       </div>
 

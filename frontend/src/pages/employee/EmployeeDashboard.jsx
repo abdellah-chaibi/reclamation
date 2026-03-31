@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { reclamationService } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PaginationControls from '../../components/PaginationControls';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -51,8 +52,15 @@ export default function EmployeeDashboard() {
   const [expandedId, setExpandedId] = useState(null);
   const [refuseId, setRefuseId] = useState(null);
   const [refusalReason, setRefusalReason] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
   const language = getCurrentLanguage(i18n.language);
   const ui = {
+    page: getLocalizedText({ ar: 'ØµÙØ­Ø©', fr: 'Page' }, language),
+    of: getLocalizedText({ ar: 'Ù…Ù†', fr: 'sur' }, language),
+    results: getLocalizedText({ ar: 'Ù†ØªØ§Ø¦Ø¬', fr: 'resultats' }, language),
+    previous: getLocalizedText({ ar: 'Ø§Ù„Ø³Ø§Ø¨Ù‚', fr: 'Precedent' }, language),
+    next: getLocalizedText({ ar: 'Ø§Ù„ØªØ§Ù„ÙŠ', fr: 'Suivant' }, language),
     loadError: getLocalizedText({ ar: 'تعذر تحميل المهام المسندة.', fr: 'Echec du chargement des taches assignees.' }, language),
     statusUpdated: getLocalizedText({ ar: 'تم تحديث الحالة بنجاح.', fr: 'Statut mis a jour avec succes.' }, language),
     statusError: getLocalizedText({ ar: 'تعذر تحديث الحالة.', fr: 'Echec de la mise a jour du statut.' }, language),
@@ -163,7 +171,13 @@ export default function EmployeeDashboard() {
   const todo = recs.filter((r) => r.status === 'en_attent' || r.status === 'en_cours');
   const resolved = recs.filter((r) => r.status === 'terminee' || r.status === 'rejete');
   const rejected = recs.filter((r) => r.status === 'rejete');
-  const groupedReclamations = groupReclamationsByDate(recs, language);
+  const totalPages = Math.ceil(recs.length / itemsPerPage);
+  const currentItems = recs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const groupedReclamations = groupReclamationsByDate(currentItems, language);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, Math.max(totalPages, 1)));
+  }, [totalPages]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 animate-in fade-in duration-500">
@@ -403,6 +417,25 @@ export default function EmployeeDashboard() {
           </div>
         )}
       </div>
+
+      {!loading && recs.length > 0 && (
+        <div className="mt-8">
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={recs.length}
+            onPageChange={setCurrentPage}
+            labels={{
+              page: 'Page',
+              of: 'sur',
+              results: 'resultats',
+              previous: 'Precedent',
+              next: 'Suivant',
+            }}
+            className="rounded-[2rem] border border-slate-200 bg-white shadow-sm"
+          />
+        </div>
+      )}
 
       {refuseId && (
         <div className="fixed inset-0 z-[120] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">

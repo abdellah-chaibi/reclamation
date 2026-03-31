@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { departementService, userService } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PaginationControls from '../../components/PaginationControls';
 import { getCurrentLanguage, getLocalizedText, translateDepartmentName } from '../../utils/localization';
 import {
   Building2, Plus, Edit2, Trash2, X,
@@ -19,9 +20,16 @@ export default function AdminDepartements() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const language = getCurrentLanguage(i18n.language);
 
   const text = {
+    page: getLocalizedText({ ar: 'ØµÙØ­Ø©', fr: 'Page' }, language),
+    of: getLocalizedText({ ar: 'Ù…Ù†', fr: 'sur' }, language),
+    results: getLocalizedText({ ar: 'Ù†ØªØ§Ø¦Ø¬', fr: 'resultats' }, language),
+    previous: getLocalizedText({ ar: 'Ø§Ù„Ø³Ø§Ø¨Ù‚', fr: 'Precedent' }, language),
+    next: getLocalizedText({ ar: 'Ø§Ù„ØªØ§Ù„ÙŠ', fr: 'Suivant' }, language),
     loadError: getLocalizedText({ ar: 'تعذر تحميل الأقسام.', fr: 'Impossible de charger les departements.' }, language),
     required: getLocalizedText({ ar: 'اسم القسم مطلوب.', fr: 'Le nom du departement est requis.' }, language),
     updateSuccess: getLocalizedText({ ar: 'تم تحديث القسم.', fr: 'Departement mis a jour.' }, language),
@@ -70,6 +78,13 @@ export default function AdminDepartements() {
       return () => clearTimeout(timer);
     }
   }, [success, error]);
+
+  const totalPages = Math.ceil(depts.length / itemsPerPage);
+  const currentItems = depts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, Math.max(totalPages, 1)));
+  }, [totalPages]);
 
   const openCreate = () => {
     setEditItem(null);
@@ -162,7 +177,7 @@ export default function AdminDepartements() {
                       {text.empty}
                     </td>
                   </tr>
-                ) : depts.map((d) => (
+                ) : currentItems.map((d) => (
                   <tr key={d.id} className="hover:bg-slate-50/30 transition-colors group">
                     <td className="px-6 py-4 text-xs font-bold text-slate-400">#{d.id}</td>
                     <td className="px-6 py-4">
@@ -212,6 +227,22 @@ export default function AdminDepartements() {
               </tbody>
             </table>
           </div>
+        )}
+
+        {!loading && (
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={depts.length}
+            onPageChange={setCurrentPage}
+            labels={{
+              page: 'Page',
+              of: 'sur',
+              results: 'resultats',
+              previous: 'Precedent',
+              next: 'Suivant',
+            }}
+          />
         )}
       </div>
 

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { reclamationService, departementService } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PaginationControls from '../components/PaginationControls';
 import { formatLocalizedDate, translateDepartmentName } from '../utils/localization';
 import {
   Plus, X, MapPin, Paperclip, Send, Building2,
@@ -54,8 +55,12 @@ export default function ReclamationPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
-  const groupedReclamations = groupReclamationsByDate(reclamations, i18n.language);
+  const totalPages = Math.ceil(reclamations.length / itemsPerPage);
+  const currentItems = reclamations.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const groupedReclamations = groupReclamationsByDate(currentItems, i18n.language);
 
   const fetchData = async () => {
     setLoadingList(true);
@@ -152,6 +157,7 @@ export default function ReclamationPage() {
       setForm(emptyForm);
       setPreviewUrl(null);
       setShowForm(false);
+      setCurrentPage(1);
       fetchData();
     } catch {
       setErrorMsg(t('reclamations.messages.submitError'));
@@ -159,6 +165,10 @@ export default function ReclamationPage() {
       setSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, Math.max(totalPages, 1)));
+  }, [totalPages]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 animate-in fade-in duration-500">
@@ -371,6 +381,25 @@ export default function ReclamationPage() {
               </div>
             </section>
           ))}
+        </div>
+      )}
+
+      {!loadingList && reclamations.length > 0 && (
+        <div className="mt-8">
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={reclamations.length}
+            onPageChange={setCurrentPage}
+            labels={{
+              page: t('common.page', 'Page'),
+              of: t('common.of', 'sur'),
+              results: t('common.results', 'resultats'),
+              previous: t('common.previous', 'Precedent'),
+              next: t('common.next', 'Suivant'),
+            }}
+            className="rounded-[2rem] border border-slate-200 bg-white shadow-sm"
+          />
         </div>
       )}
     </div>

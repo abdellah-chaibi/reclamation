@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { reclamationService } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PaginationControls from '../../components/PaginationControls';
 import Employes from './Employes';
 import { formatLocalizedDate, getCurrentLanguage, getLocalizedText, translateDepartmentName } from '../../utils/localization';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -52,8 +53,15 @@ function ChefOverview() {
   const [expandedId, setExpandedId] = useState(null);
   const [refuseId, setRefuseId] = useState(null);
   const [refusalReason, setRefusalReason] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
   const language = getCurrentLanguage(i18n.language);
   const text = {
+    page: getLocalizedText({ ar: 'ØµÙØ­Ø©', fr: 'Page' }, language),
+    of: getLocalizedText({ ar: 'Ù…Ù†', fr: 'sur' }, language),
+    results: getLocalizedText({ ar: 'Ù†ØªØ§Ø¦Ø¬', fr: 'resultats' }, language),
+    previous: getLocalizedText({ ar: 'Ø§Ù„Ø³Ø§Ø¨Ù‚', fr: 'Precedent' }, language),
+    next: getLocalizedText({ ar: 'Ø§Ù„ØªØ§Ù„ÙŠ', fr: 'Suivant' }, language),
     connectionError: getLocalizedText({ ar: 'وقع مشكل فالاتصال بالخادم.', fr: 'Probleme de connexion au serveur.' }, language),
     statusUpdated: getLocalizedText({ ar: 'تم تحديث الحالة بنجاح.', fr: 'Statut mis a jour avec succes.' }, language),
     statusError: getLocalizedText({ ar: 'وقع مشكل أثناء تغيير الحالة.', fr: 'Erreur lors du changement de statut.' }, language),
@@ -162,7 +170,13 @@ function ChefOverview() {
   const todo = recs.filter((item) => ['en_attent', 'en_cours'].includes(item.status));
   const resolved = recs.filter((item) => ['terminee', 'rejete'].includes(item.status));
   const rejected = recs.filter((item) => item.status === 'rejete');
-  const groupedRecs = groupReclamationsByDate(recs, language);
+  const totalPages = Math.ceil(recs.length / itemsPerPage);
+  const currentItems = recs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const groupedRecs = groupReclamationsByDate(currentItems, language);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, Math.max(totalPages, 1)));
+  }, [totalPages]);
 
   return (
     <div className="min-h-screen bg-slate-50/50 pb-20">
@@ -365,6 +379,25 @@ function ChefOverview() {
           </div>
         )}
       </div>
+
+      {!loading && recs.length > 0 && (
+        <div className="max-w-6xl mx-auto px-4 mt-8">
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={recs.length}
+            onPageChange={setCurrentPage}
+            labels={{
+              page: 'Page',
+              of: 'sur',
+              results: 'resultats',
+              previous: 'Precedent',
+              next: 'Suivant',
+            }}
+            className="rounded-[2rem] border border-slate-200 bg-white shadow-sm"
+          />
+        </div>
+      )}
 
       {refuseId && (
         <div className="fixed inset-0 z-[120] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
