@@ -7,18 +7,38 @@ use App\Http\Requests\RefuseReclamationRequest;
 use App\Http\Requests\StoreReclamationRequest;
 use App\Http\Requests\UpdateReclamationRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 
 class ReclamationController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $reclamation = Reclamation::with(['medias', 'departement', 'user'])->get();
-        return response()->json($reclamation);
+        $query = Reclamation::with(['medias', 'departement', 'user'])->latest();
+        $user = $request->user();
+
+        if (in_array($user->role, ['chef_dep', 'employe'], true)) {
+            $query->where('departement_id', $user->departement_id);
+        } elseif ($user->role === 'citoyen') {
+            $query->where('user_id', $user->id);
+        }
+
+        if ($request->filled('departement_id')) {
+            $query->where('departement_id', $request->integer('departement_id'));
+        }
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->integer('user_id'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
+        return response()->json($query->get());
     }
 
 

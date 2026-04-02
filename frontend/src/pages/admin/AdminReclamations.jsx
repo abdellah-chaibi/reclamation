@@ -99,23 +99,36 @@ export default function AdminReclamations() {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [rRes, dRes, uRes] = await Promise.all([
+        const [rRes, dRes, uRes] = await Promise.allSettled([
           reclamationService.getAll(),
           departementService.getAll(),
           userService.getAll(),
         ]);
 
-        const r = rRes.data?.data || rRes.data || [];
+        if (rRes.status !== 'fulfilled') {
+          throw new Error('reclamations_load_failed');
+        }
+
+        const r = rRes.value.data?.data || rRes.value.data || [];
         const sortedRecs = Array.isArray(r)
           ? [...r].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
           : [];
         setRecs(sortedRecs);
 
-        const d = dRes.data?.data || dRes.data || [];
-        setDepts(Array.isArray(d) ? d : []);
+        if (dRes.status === 'fulfilled') {
+          const d = dRes.value.data?.data || dRes.value.data || [];
+          setDepts(Array.isArray(d) ? d : []);
+        } else {
+          setDepts([]);
+        }
 
-        const u = Array.isArray(uRes.data) ? uRes.data : (uRes.data?.data || []);
-        setUsers(Array.isArray(u) ? u : []);
+        if (uRes.status === 'fulfilled') {
+          const u = Array.isArray(uRes.value.data) ? uRes.value.data : (uRes.value.data?.data || []);
+          setUsers(Array.isArray(u) ? u : []);
+        } else {
+          setUsers([]);
+        }
+
         setError('');
       } catch {
         setError(text.loadError);

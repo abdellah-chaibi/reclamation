@@ -86,12 +86,17 @@ export default function EmployeeDashboard() {
   };
 
   const fetchAll = async () => {
+    if (!user?.departement_id) {
+      setRecs([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await reclamationService.getAll();
+      const res = await reclamationService.getAll({ departement_id: user.departement_id });
       const r = res.data?.data || res.data || [];
-      const myDeptId = user?.departement_id;
-      setRecs(Array.isArray(r) ? r.filter((item) => item.departement_id === myDeptId) : []);
+      setRecs(Array.isArray(r) ? r : []);
     } catch {
       setError(ui.loadError);
     } finally {
@@ -100,8 +105,13 @@ export default function EmployeeDashboard() {
   };
 
   useEffect(() => {
+    if (!user?.departement_id) {
+      setLoading(false);
+      return;
+    }
+
     fetchAll();
-  }, []);
+  }, [user?.departement_id]);
 
   useEffect(() => {
     if (success || error) {

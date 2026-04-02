@@ -63,14 +63,20 @@ export default function ReclamationPage() {
   const groupedReclamations = groupReclamationsByDate(currentItems, i18n.language);
 
   const fetchData = async () => {
+    if (!user?.id) {
+      setReclamations([]);
+      setLoadingList(false);
+      return;
+    }
+
     setLoadingList(true);
     try {
       const [rRes, dRes] = await Promise.all([
-        reclamationService.getAll(),
+        reclamationService.getMy(user.id),
         departementService.getAll(),
       ]);
       const all = rRes.data?.data || rRes.data || [];
-      setReclamations(Array.isArray(all) ? all.filter((item) => item.user_id === user?.id) : []);
+      setReclamations(Array.isArray(all) ? all : []);
       const depts = dRes.data?.data || dRes.data || [];
       setDepartements(Array.isArray(depts) ? depts : []);
     } catch {
@@ -81,8 +87,13 @@ export default function ReclamationPage() {
   };
 
   useEffect(() => {
+    if (!user?.id) {
+      setLoadingList(false);
+      return;
+    }
+
     fetchData();
-  }, [t]);
+  }, [t, user?.id]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));

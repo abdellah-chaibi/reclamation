@@ -99,10 +99,9 @@ function ChefOverview() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const res = await reclamationService.getAll();
+      const res = await reclamationService.getAll({ departement_id: user?.departement_id });
       const all = res.data?.data || res.data || [];
-      const myDeptId = user?.departement_id;
-      setRecs(Array.isArray(all) ? all.filter((item) => item.departement_id === myDeptId) : []);
+      setRecs(Array.isArray(all) ? all : []);
     } catch {
       setError(text.connectionError);
     } finally {
