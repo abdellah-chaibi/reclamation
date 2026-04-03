@@ -144,8 +144,8 @@ const fr = {
     },
   },
   about: {
-    title: 'À propos de ReclamApp',
-    description: "ReclamApp est une plateforme citoyenne conçue pour combler le fossé entre les citoyens et l'administration locale. Notre mission est de rendre la gestion des réclamations transparente, efficace et accessible à tous pour une ville meilleure.",
+    title: 'À propos de e-reclamation',
+    description: "e-reclamation est une plateforme citoyenne conçue pour combler le fossé entre les citoyens et l'administration locale. Notre mission est de rendre la gestion des réclamations transparente, efficace et accessible à tous pour une ville meilleure.",
     services: 'Nos services',
     actors: 'Les acteurs',
     features: {

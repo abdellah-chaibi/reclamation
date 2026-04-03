@@ -17,7 +17,7 @@ class ReclamationController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Reclamation::with(['medias', 'departement', 'user'])->latest();
+        $query = Reclamation::with(['medias', 'departement', 'user', 'assignedEmployee'])->latest();
         $user = $request->user();
 
         if (in_array($user->role, ['chef_dep', 'employe'], true)) {
@@ -65,7 +65,7 @@ class ReclamationController extends Controller
     }
 
     // Return the created reclamation with media loaded
-    return response()->json($reclamation->load('medias'), 201);
+    return response()->json($reclamation->load(['medias', 'departement', 'user', 'assignedEmployee']), 201);
 }
 
     /**
@@ -73,7 +73,7 @@ class ReclamationController extends Controller
      */
     public function show(Reclamation $reclamation)
     {
-        return response()->json($reclamation->load(['medias', 'departement', 'user']));
+        return response()->json($reclamation->load(['medias', 'departement', 'user', 'assignedEmployee']));
     }
 
 
@@ -83,17 +83,63 @@ class ReclamationController extends Controller
      */
     public function update(UpdateReclamationRequest $request, Reclamation $reclamation)
     {
-        $data=$request->validated();
+        $data = $request->validated();
+        $user = $request->user();
 
-        if ($request->user()->role==='admin') {
-            unset( $data['status'] ) ;
+        if ($user->role === 'admin') {
+            unset($data['status']);
+            $reclamation->update($data);
 
-        }elseif ($request->user()->role==='chef_dep' || $request->user()->role==='employe') {
-            unset( $data['departement_id'] ) ;
+            return response()->json($reclamation->load(['medias', 'departement', 'user', 'assignedEmployee']));
+        }
+
+        if ($user->role === 'chef_dep') {
+            unset($data['assigned_to']);
+            unset($data['status']);
+
+            return DB::transaction(function () use ($data, $reclamation, $user) {
+                $lockedReclamation = Reclamation::query()->lockForUpdate()->findOrFail($reclamation->id);
+
+                if ($lockedReclamation->departement_id !== $user->departement_id) {
+                    return response()->json([
+                        'message' => 'Cette reclamation ne appartient pas a votre departement.',
+                    ], 403);
+                }
+
+                $lockedReclamation->update($data);
+
+                return response()->json($lockedReclamation->load(['medias', 'departement', 'user', 'assignedEmployee']));
+            });
+        }
+
+        if ($user->role === 'employe') {
+            unset($data['departement_id']);
+            unset($data['assigned_to']);
+
+            return DB::transaction(function () use ($data, $reclamation, $user) {
+                $lockedReclamation = Reclamation::query()->lockForUpdate()->findOrFail($reclamation->id);
+
+                if ($lockedReclamation->assigned_to && $lockedReclamation->assigned_to !== $user->id) {
+                    return response()->json([
+                        'message' => 'Cette reclamation est deja prise par un autre employe.',
+                    ], 409);
+                }
+
+                if (($data['status'] ?? null) === 'en_cours' && !$lockedReclamation->assigned_to) {
+                    $data['assigned_to'] = $user->id;
+                }
+
+                if (array_key_exists('status', $data)) {
+                    $lockedReclamation->update($data);
+                }
+
+                return response()->json($lockedReclamation->load(['medias', 'departement', 'user', 'assignedEmployee']));
+            });
         }
 
         $reclamation->update($data);
-        return response()->json($reclamation->load(['medias', 'departement', 'user']));
+
+        return response()->json($reclamation->load(['medias', 'departement', 'user', 'assignedEmployee']));
     }
 
     public function refuse(RefuseReclamationRequest $request, Reclamation $reclamation): JsonResponse
@@ -113,7 +159,7 @@ class ReclamationController extends Controller
 
         return response()->json([
             'message' => 'Reclamation rejetee avec succes.',
-            'data' => $reclamation->fresh()->load(['medias', 'departement', 'user']),
+            'data' => $reclamation->fresh()->load(['medias', 'departement', 'user', 'assignedEmployee']),
         ]);
     }
 

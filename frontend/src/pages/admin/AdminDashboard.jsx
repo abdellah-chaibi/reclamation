@@ -7,6 +7,7 @@ import AdminUsers from './AdminUsers';
 import AdminDepartements from './AdminDepartements';
 import AdminReclamations from './AdminReclamations';
 import AdminEmployees from './AdminEmployees';
+import AdminReclamationDetails from './AdminReclamationDetails';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { getCurrentLanguage, getLocalizedText } from '../../utils/localization';
 import {
@@ -124,6 +125,7 @@ export default function AdminDashboard() {
                 <Route path="departements" element={<AdminDepartements />} />
                 <Route path="employees" element={<AdminEmployees />} />
                 <Route path="reclamations" element={<AdminReclamations />} />
+                <Route path="reclamations/:id" element={<AdminReclamationDetails />} />
                 <Route path="*" element={<Navigate to="/admin/users" replace />} />
               </Routes>
             </div>

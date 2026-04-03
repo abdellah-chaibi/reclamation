@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../context/AuthContext';
 import { reclamationService, departementService, userService } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -19,6 +21,7 @@ import {
   X,
   RefreshCw,
   AlertCircle,
+  Eye,
 } from 'lucide-react';
 
 const STATUSES = [
@@ -52,8 +55,15 @@ const STATUSES = [
   },
 ];
 
+const extractItems = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+};
+
 export default function AdminReclamations() {
   const { i18n } = useTranslation();
+  const { user } = useAuth();
   const [recs, setRecs] = useState([]);
   const [depts, setDepts] = useState([]);
   const [users, setUsers] = useState([]);
@@ -63,9 +73,12 @@ export default function AdminReclamations() {
   const [error, setError] = useState('');
   const [editId, setEditId] = useState(null);
   const [editDept, setEditDept] = useState('');
+  const [editEmployee, setEditEmployee] = useState('');
   const [saving, setSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
+  const isChefDep = user?.role === 'chef_dep';
+  const detailsBasePath = isChefDep ? '/chef/reclamations' : '/admin/reclamations';
 
   const language = getCurrentLanguage(i18n.language);
   const text = {
@@ -84,13 +97,16 @@ export default function AdminReclamations() {
     allStatuses: getLocalizedText({ ar: 'جميع الحالات', fr: 'Tous les statuts' }, language),
     allDepartments: getLocalizedText({ ar: 'جميع الأقسام', fr: 'Tous les departements' }, language),
     unassigned: getLocalizedText({ ar: 'غير معين', fr: 'Non assigne' }, language),
-    assignPlaceholder: getLocalizedText({ ar: 'تعيين...', fr: 'Assigner...' }, language),
+    assignPlaceholder: getLocalizedText({ ar: 'اختر القسم...', fr: 'Choisir le departement...' }, language),
+    employeePlaceholder: getLocalizedText({ ar: 'اختر الموظف...', fr: "Choisir l'employe..." }, language),
+    employeeLabel: getLocalizedText({ ar: 'الموظف المسؤول', fr: 'Employe responsable' }, language),
     complaint: getLocalizedText({ ar: 'الشكاية', fr: 'Reclamation' }, language),
     requesterDepartment: getLocalizedText({ ar: 'صاحب الطلب والقسم', fr: 'Demandeur et departement' }, language),
     status: getLocalizedText({ ar: 'الحالة', fr: 'Statut' }, language),
     actions: getLocalizedText({ ar: 'الإجراءات', fr: 'Actions' }, language),
     empty: getLocalizedText({ ar: 'ما كاين حتى شكاية.', fr: 'Aucune reclamation.' }, language),
     assignAction: getLocalizedText({ ar: 'توجيه', fr: 'Affecter' }, language),
+    detailsAction: getLocalizedText({ ar: 'التتبع', fr: 'Suivi' }, language),
     footer: getLocalizedText({ ar: 'نهاية اللائحة', fr: 'Fin de la liste' }, language),
     countLabel: getLocalizedText({ ar: 'شكاية', fr: 'reclamation(s)' }, language),
   };
@@ -100,7 +116,7 @@ export default function AdminReclamations() {
       setLoading(true);
       try {
         const [rRes, dRes, uRes] = await Promise.allSettled([
-          reclamationService.getAll(),
+          reclamationService.getAll(isChefDep ? { departement_id: user?.departement_id } : undefined),
           departementService.getAll(),
           userService.getAll(),
         ]);
@@ -109,21 +125,21 @@ export default function AdminReclamations() {
           throw new Error('reclamations_load_failed');
         }
 
-        const r = rRes.value.data?.data || rRes.value.data || [];
+        const r = extractItems(rRes.value.data);
         const sortedRecs = Array.isArray(r)
           ? [...r].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
           : [];
         setRecs(sortedRecs);
 
         if (dRes.status === 'fulfilled') {
-          const d = dRes.value.data?.data || dRes.value.data || [];
+          const d = extractItems(dRes.value.data);
           setDepts(Array.isArray(d) ? d : []);
         } else {
           setDepts([]);
         }
 
         if (uRes.status === 'fulfilled') {
-          const u = Array.isArray(uRes.value.data) ? uRes.value.data : (uRes.value.data?.data || []);
+          const u = extractItems(uRes.value.data);
           setUsers(Array.isArray(u) ? u : []);
         } else {
           setUsers([]);
@@ -138,21 +154,34 @@ export default function AdminReclamations() {
     };
 
     fetchAll();
-  }, [text.loadError]);
+  }, [isChefDep, text.loadError, user?.departement_id]);
 
   const handleAssign = async (id) => {
     const currentReclamation = recs.find((rec) => rec.id === id);
     if (!editDept || currentReclamation?.status !== 'en_attent') return;
+    if (!isChefDep && !editEmployee) return;
 
     setSaving(true);
     setError('');
 
     try {
-      await reclamationService.update(id, { departement_id: parseInt(editDept, 10) });
-      setEditId(null);
+      const payload = {
+        departement_id: parseInt(editDept, 10),
+      };
 
-      const refreshedReclamations = await reclamationService.getAll();
-      const items = refreshedReclamations.data?.data || refreshedReclamations.data || [];
+      if (!isChefDep) {
+        payload.assigned_to = parseInt(editEmployee, 10);
+      }
+
+      await reclamationService.update(id, payload);
+      setEditId(null);
+      setEditDept('');
+      setEditEmployee('');
+
+      const refreshedReclamations = await reclamationService.getAll(
+        isChefDep ? { departement_id: user?.departement_id } : undefined,
+      );
+      const items = extractItems(refreshedReclamations.data);
       const sortedItems = Array.isArray(items)
         ? [...items].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         : [];
@@ -188,6 +217,10 @@ export default function AdminReclamations() {
     const matchedUser = users.find((user) => String(user.id) === String(reclamation.user_id));
     return matchedUser?.name || `ID #${reclamation.user_id}`;
   };
+
+  const getDepartmentEmployees = (departmentId) => (
+    users.filter((user) => user.role === 'employe' && String(user.departement_id) === String(departmentId))
+  );
 
   return (
     <div className="animate-in fade-in duration-500 pb-10">
@@ -268,6 +301,8 @@ export default function AdminReclamations() {
                     const canAssign = reclamation.status === 'en_attent';
                     const citoyenName = getCitoyenName(reclamation);
                     const assignedDepartment = depts.find((department) => department.id === reclamation.departement_id);
+                    const availableEmployees = getDepartmentEmployees(editId === reclamation.id ? editDept : reclamation.departement_id);
+                    const assignedEmployeeName = reclamation.assigned_employee?.name || text.unassigned;
 
                     return (
                       <tr key={reclamation.id} className="transition-colors hover:bg-slate-50/30">
@@ -287,17 +322,21 @@ export default function AdminReclamations() {
                         </td>
 
                         <td className="px-6 py-4">
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-                              <User size={12} className="text-slate-300" />
-                              {citoyenName}
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                                <User size={12} className="text-slate-300" />
+                                {citoyenName}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                                <Building2 size={12} />
+                                {translateDepartmentName(assignedDepartment?.name, language) || text.unassigned}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                                <User size={12} />
+                                {assignedEmployeeName}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                              <Building2 size={12} />
-                              {translateDepartmentName(assignedDepartment?.name, language) || text.unassigned}
-                            </div>
-                          </div>
-                        </td>
+                          </td>
 
                         <td className="px-6 py-4 text-center">
                           <StatusBadge status={reclamation.status} />
@@ -309,7 +348,10 @@ export default function AdminReclamations() {
                               <select
                                 className="rounded-lg border border-slate-200 bg-slate-100 px-2 py-1.5 text-[11px] font-bold outline-none focus:border-blue-400"
                                 value={editDept}
-                                onChange={(e) => setEditDept(e.target.value)}
+                                onChange={(e) => {
+                                  setEditDept(e.target.value);
+                                  setEditEmployee('');
+                                }}
                               >
                                 <option value="">{text.assignPlaceholder}</option>
                                 {depts.map((department) => (
@@ -318,6 +360,22 @@ export default function AdminReclamations() {
                                   </option>
                                 ))}
                               </select>
+
+                              {!isChefDep && (
+                                <select
+                                  className="rounded-lg border border-slate-200 bg-slate-100 px-2 py-1.5 text-[11px] font-bold outline-none focus:border-blue-400"
+                                  value={editEmployee}
+                                  onChange={(e) => setEditEmployee(e.target.value)}
+                                  disabled={!editDept}
+                                >
+                                  <option value="">{text.employeePlaceholder}</option>
+                                  {availableEmployees.map((employee) => (
+                                    <option key={employee.id} value={employee.id}>
+                                      {employee.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
 
                               <button
                                 className="rounded-lg bg-blue-600 p-1.5 text-white transition-colors hover:bg-blue-700"
@@ -335,21 +393,32 @@ export default function AdminReclamations() {
                               </button>
                             </div>
                           ) : (
-                            <button
-                              className={`rounded-xl border px-4 py-1.5 text-[11px] font-black uppercase tracking-wider transition-all ${
-                                canAssign
-                                  ? 'border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white'
-                                  : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
-                              }`}
-                              onClick={() => {
-                                if (!canAssign) return;
-                                setEditId(reclamation.id);
-                                setEditDept(String(reclamation.departement_id || ''));
-                              }}
-                              disabled={!canAssign}
-                            >
-                              {text.assignAction}
-                            </button>
+                            <div className="flex items-center justify-end gap-2">
+                              <Link
+                                to={`${detailsBasePath}/${reclamation.id}`}
+                                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50"
+                              >
+                                <Eye size={14} />
+                                {text.detailsAction}
+                              </Link>
+
+                              <button
+                                className={`rounded-xl border px-4 py-1.5 text-[11px] font-black uppercase tracking-wider transition-all ${
+                                  canAssign
+                                    ? 'border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white'
+                                    : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+                                }`}
+                                onClick={() => {
+                                  if (!canAssign) return;
+                                  setEditId(reclamation.id);
+                                  setEditDept(String(reclamation.departement_id || ''));
+                                  setEditEmployee(String(reclamation.assigned_to || ''));
+                                }}
+                                disabled={!canAssign}
+                              >
+                                {text.assignAction}
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>

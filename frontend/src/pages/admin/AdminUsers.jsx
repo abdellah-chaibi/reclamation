@@ -23,6 +23,12 @@ const normalizeRole = (role) => {
   return role;
 };
 
+const extractItems = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+};
+
 const emptyForm = { name: '', email: '', password: '', departement_id: '', role: 'citoyen', cin: '' };
 
 export default function AdminUsers() {
@@ -93,9 +99,9 @@ export default function AdminUsers() {
     setLoading(true);
     try {
       const [uRes, dRes] = await Promise.all([userService.getAll(), departementService.getAll()]);
-      const uData = Array.isArray(uRes.data) ? uRes.data : (uRes.data?.data || []);
+      const uData = extractItems(uRes.data);
       setUsers(uData.filter((userItem) => userItem.id !== currentUser?.id));
-      const departments = dRes.data?.data || dRes.data || [];
+      const departments = extractItems(dRes.data);
       setDepts(Array.isArray(departments) ? departments : []);
     } catch {
       setError(text.loadError);

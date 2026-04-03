@@ -24,6 +24,7 @@ class UpdateReclamationRequest extends FormRequest
         return [
             'status' => 'nullable|in:en_cours,terminee',
             'departement_id' => 'nullable|exists:departements,id',
+            'assigned_to' => 'nullable|exists:users,id',
         ];
     }
 }

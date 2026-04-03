@@ -17,6 +17,7 @@ class Reclamation extends Model
         'refusal_reason',
         'user_id',
         'departement_id',
+        'assigned_to',
         'latitude',
         'longitude'
     ];
@@ -31,6 +32,11 @@ class Reclamation extends Model
     public function departement()
     {
         return $this->belongsTo(Departement::class);
+    }
+
+    public function assignedEmployee()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     // images dyal reclamation

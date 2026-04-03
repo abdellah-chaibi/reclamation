@@ -7,6 +7,8 @@ import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PaginationControls from '../../components/PaginationControls';
 import Employes from './Employes';
+import AdminReclamations from '../admin/AdminReclamations';
+import AdminReclamationDetails from '../admin/AdminReclamationDetails';
 import { formatLocalizedDate, getCurrentLanguage, getLocalizedText, translateDepartmentName } from '../../utils/localization';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -436,6 +438,8 @@ export default function ChefDashboard() {
   return (
     <Routes>
       <Route index element={<ChefOverview />} />
+      <Route path="reclamations" element={<AdminReclamations />} />
+      <Route path="reclamations/:id" element={<AdminReclamationDetails />} />
       <Route path="employees" element={<Employes />} />
       <Route path="*" element={<Navigate to="/chef" replace />} />
     </Routes>

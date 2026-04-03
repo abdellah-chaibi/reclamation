@@ -9,6 +9,12 @@ import {
   CheckCircle, AlertCircle, User, Briefcase, RefreshCw,
 } from 'lucide-react';
 
+const extractItems = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+};
+
 export default function AdminDepartements() {
   const { i18n } = useTranslation();
   const [depts, setDepts] = useState([]);
@@ -60,9 +66,9 @@ export default function AdminDepartements() {
     setLoading(true);
     try {
       const [dRes, uRes] = await Promise.all([departementService.getAll(), userService.getAll()]);
-      const d = dRes.data?.data || dRes.data || [];
+      const d = extractItems(dRes.data);
       setDepts(Array.isArray(d) ? d : []);
-      const u = uRes.data?.data || uRes.data || [];
+      const u = extractItems(uRes.data);
       setUsers(Array.isArray(u) ? u.filter((x) => x.role === 'chef_dep') : []);
     } catch {
       setError(text.loadError);

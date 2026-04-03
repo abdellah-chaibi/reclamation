@@ -48,6 +48,25 @@ class ReclamationVisibilityTest extends TestCase
             ->assertJsonMissing(['id' => $rhReclamation->id]);
     }
 
+    public function test_chef_dep_only_sees_reclamations_from_own_departement(): void
+    {
+        [$support, $rh, $citizenA, $citizenB, $supportReclamation, $rhReclamation] = $this->seedVisibilityFixtures();
+        $chef = User::factory()->create([
+            'role' => 'chef_dep',
+            'departement_id' => $support->id,
+        ]);
+
+        Sanctum::actingAs($chef);
+
+        $response = $this->getJson('/api/reclamations');
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonFragment(['id' => $supportReclamation->id])
+            ->assertJsonMissing(['id' => $rhReclamation->id]);
+    }
+
     public function test_citoyen_only_sees_their_own_reclamations(): void
     {
         [$support, $rh, $citizenA, $citizenB, $supportReclamation, $rhReclamation] = $this->seedVisibilityFixtures();

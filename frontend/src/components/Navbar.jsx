@@ -41,6 +41,7 @@ export default function Navbar() {
     ],
     chef_dep: [
       { to: '/chef', label: t('navbar.dashboard'), icon: BarChart3 },
+      { to: '/chef/reclamations', label: t('navbar.complaints'), icon: ClipboardList },
       { to: '/chef/employees', label: t('navbar.employees'), icon: Users },
       { to: '/profile', label: t('navbar.profile'), icon: User },
     ],

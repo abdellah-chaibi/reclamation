@@ -64,7 +64,7 @@ export default function EmployeeDashboard() {
     loadError: getLocalizedText({ ar: 'تعذر تحميل المهام المسندة.', fr: 'Echec du chargement des taches assignees.' }, language),
     statusUpdated: getLocalizedText({ ar: 'تم تحديث الحالة بنجاح.', fr: 'Statut mis a jour avec succes.' }, language),
     statusError: getLocalizedText({ ar: 'تعذر تحديث الحالة.', fr: 'Echec de la mise a jour du statut.' }, language),
-    refusalMin: getLocalizedText({ ar: 'خاص سبب الرفض يكون فيه على الأقل 10 أحرف.', fr: 'Le motif du refus doit contenir au moins 10 caracteres.' }, language),
+    refusalMin: getLocalizedText({ ar: 'يجب أن يحتوي سبب الرفض على 10 أحرف على الأقل. ', fr: 'Le motif du refus doit contenir au moins 10 caracteres.' }, language),
     refusalSuccess: getLocalizedText({ ar: 'تم رفض الشكاية بنجاح.', fr: 'Reclamation refusee avec succes.' }, language),
     refusalError: getLocalizedText({ ar: 'تعذر رفض الشكاية.', fr: 'Echec du refus de la reclamation.' }, language),
     allClear: getLocalizedText({ ar: 'كلشي واضح', fr: 'Tout est clair' }, language),
@@ -78,11 +78,15 @@ export default function EmployeeDashboard() {
     closeDone: getLocalizedText({ ar: 'إغلاق كمكتملة', fr: 'Cloturer (Terminee)' }, language),
     refuse: getLocalizedText({ ar: 'رفض', fr: 'Refuser' }, language),
     refuseTitle: getLocalizedText({ ar: 'رفض الشكاية', fr: 'Refuser la reclamation' }, language),
-    refuseHelp: getLocalizedText({ ar: 'كتب سبب الرفض. الحالة غادي تولّي تلقائياً "مرفوضة".', fr: 'Ajoutez le motif du refus. Le statut deviendra automatiquement "rejete".' }, language),
-    refusePlaceholder: getLocalizedText({ ar: 'شرح علاش هاد الشكاية ترفضات...', fr: 'Expliquez pourquoi la reclamation est refusee...' }, language),
+    refuseHelp: getLocalizedText({ ar: ' أضف سبب الرفض. ستتغير الحالة تلقائياً إلى "مرفوض"', fr: 'Ajoutez le motif du refus. Le statut deviendra automatiquement "rejete".' }, language),
+    refusePlaceholder: getLocalizedText({ ar: ' يرجى توضيح سبب رفض الشكاية...', fr: 'Expliquez pourquoi la reclamation est refusee...' }, language),
     cancel: getLocalizedText({ ar: 'إلغاء', fr: 'Annuler' }, language),
     processing: getLocalizedText({ ar: 'جاري المعالجة...', fr: 'En cours...' }, language),
     confirmRefuse: getLocalizedText({ ar: 'تأكيد الرفض', fr: 'Confirmer le refus' }, language),
+    alreadyTaken: getLocalizedText(
+      { ar: 'هذه الشكوى قيد المعالجة من قبل موظف آخر.', fr: 'Cette reclamation est deja prise par un autre employe.' },
+      language,
+    ),
   };
 
   const fetchAll = async () => {
@@ -275,6 +279,8 @@ export default function EmployeeDashboard() {
                 <div className="flex flex-col gap-4">
                   {items.map((r, index) => {
                     const isExpanded = expandedId === r.id;
+                    const isTakenByAnotherEmployee = Boolean(r.assigned_to) && r.assigned_to !== user?.id;
+                    const canTakeReclamation = !isTakenByAnotherEmployee && r.status !== 'en_cours';
 
                     return (
                       <div
@@ -306,11 +312,11 @@ export default function EmployeeDashboard() {
                           </div>
 
                           <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
-                            {!isExpanded && r.status !== 'terminee' && r.status !== 'rejete' && (
+                            {!isExpanded && r.status !== 'terminee' && r.status !== 'rejete' && !isTakenByAnotherEmployee && (
                               <div className="flex gap-2">
                                 <button
                                   onClick={(e) => handleStatusUpdate(e, r.id, 'en_cours')}
-                                  disabled={saving || r.status === 'en_cours'}
+                                  disabled={saving || !canTakeReclamation}
                                   className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
                                 >
                                   {ui.startProgress}
@@ -390,12 +396,18 @@ export default function EmployeeDashboard() {
                               </div>
                             )}
 
+                            {isTakenByAnotherEmployee && (
+                              <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
+                                {ui.alreadyTaken}
+                              </div>
+                            )}
+
                             {r.status !== 'terminee' && r.status !== 'rejete' && (
                               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-200">
                                 <button
                                   className="flex-1 flex justify-center items-center gap-2 bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-xl font-black text-sm transition-all disabled:opacity-50"
                                   onClick={(e) => handleStatusUpdate(e, r.id, 'en_cours')}
-                                  disabled={saving || r.status === 'en_cours'}
+                                  disabled={saving || !canTakeReclamation}
                                 >
                                   <Clock size={18} /> {ui.markProgress}
                                 </button>
@@ -403,14 +415,14 @@ export default function EmployeeDashboard() {
                                 <button
                                   className="flex-1 flex justify-center items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-100 px-6 py-3 rounded-xl font-black text-sm transition-all disabled:opacity-50"
                                   onClick={(e) => handleStatusUpdate(e, r.id, 'terminee')}
-                                  disabled={saving}
+                                  disabled={saving || isTakenByAnotherEmployee}
                                 >
                                   <CheckCircle2 size={18} /> {ui.closeDone}
                                 </button>
                                 <button
                                   className="flex-1 flex justify-center items-center gap-2 bg-red-50 border-2 border-red-500 text-red-600 hover:bg-red-600 hover:text-white px-6 py-3 rounded-xl font-black text-sm transition-all disabled:opacity-50"
                                   onClick={(e) => openRefuseModal(e, r.id)}
-                                  disabled={saving}
+                                  disabled={saving || isTakenByAnotherEmployee}
                                 >
                                   <XCircle size={18} /> {ui.refuse}
                                 </button>
