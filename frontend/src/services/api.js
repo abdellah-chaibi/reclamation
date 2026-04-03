@@ -71,4 +71,11 @@ export const userService = {
   delete:  (id)       => api.delete(`/users/${id}`),
 };
 
+export const siteSettingsService = {
+  get: () => api.get('/site-settings'),
+  update: (data) => api.post('/site-settings', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+};
+
 export default api;

@@ -18,11 +18,13 @@ import {
   Users,
   LayoutDashboard,
 } from 'lucide-react';
-import logo from './../assets/Logo.png';
+import { useSiteSettings } from '../context/SiteSettingsContext';
+import SiteLogo from './SiteLogo';
 
 export default function Navbar() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const { settings } = useSiteSettings();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -106,9 +108,9 @@ export default function Navbar() {
           <div className="flex justify-between items-center">
             <Link to="/home" className="group flex min-w-0 items-center gap-2 shrink">
               <div className="p-1 rounded-xl group-hover:scale-105 transition-transform">
-                <img src={logo} className="h-10 w-auto" alt="logo" />
+                <SiteLogo src={settings.logo_url} className="h-10 w-auto" alt={settings.municipality_name} />
               </div>
-              <span className="truncate text-base font-black tracking-tighter text-slate-900 sm:text-xl">{t('common.siteName')}</span>
+              <span className="truncate text-base font-black tracking-tighter text-slate-900 sm:text-xl">{settings.municipality_name || t('common.siteName')}</span>
             </Link>
 
             <div className="hidden lg:flex items-center gap-1">
@@ -174,7 +176,7 @@ export default function Navbar() {
       >
         <div className="flex items-center justify-between mb-8">
           <span className="flex items-center gap-2 text-lg font-black text-slate-900 whitespace-nowrap">
-            <img src={logo} className="h-10 w-auto" alt="logo" />
+            <SiteLogo src={settings.logo_url} className="h-10 w-auto" alt={settings.municipality_name} />
             <span>{t('navbar.mobileTitle')}</span>
           </span>
           <button onClick={() => setMenuOpen(false)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors">

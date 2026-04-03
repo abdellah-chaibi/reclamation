@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink, Mail, MapPin, Phone } from 'lucide-react';
-import logo from './../assets/Logo.png';
+import { useSiteSettings } from '../context/SiteSettingsContext';
+import SiteLogo from './SiteLogo';
 
 export default function Footer() {
   const { t } = useTranslation();
+  const { settings } = useSiteSettings();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -15,9 +17,9 @@ export default function Footer() {
             <div className="space-y-6">
               <Link to="/" className="group flex w-fit items-center gap-3">
                 <div className="rounded-2xl bg-slate-900 p-3 transition-colors group-hover:bg-blue-600">
-                  <img src={logo} className="h-8 w-auto brightness-0 invert" alt="logo" />
+                  <SiteLogo src={settings.logo_url} className="h-8 w-auto brightness-0 invert" alt={settings.municipality_name} />
                 </div>
-                <span className="text-xl font-black tracking-tighter text-slate-900">{t('common.siteName')}</span>
+                <span className="text-xl font-black tracking-tighter text-slate-900">{settings.municipality_name || t('common.siteName')}</span>
               </Link>
               <p className="max-w-md text-sm leading-7 text-slate-600">{t('footer.description')}</p>
             </div>
@@ -41,11 +43,11 @@ export default function Footer() {
                 </li>
                 <li className="flex items-center gap-3">
                   <Phone size={18} className="shrink-0 text-sky-600" />
-                  <a href="tel:+2126553254" className="transition-colors hover:text-sky-700">+212 6 55 32 54</a>
+                  <a href={`tel:${settings.phone}`} className="transition-colors hover:text-sky-700">{settings.phone}</a>
                 </li>
                 <li className="flex items-center gap-3">
                   <Mail size={18} className="shrink-0 text-sky-600" />
-                  <a href="mailto:Ckt.Serviceinfo@gmail.ma" className="transition-colors hover:text-sky-700">Ckt.Serviceinfo@gmail.ma</a>
+                  <a href={`mailto:${settings.email}`} className="transition-colors hover:text-sky-700">{settings.email}</a>
                 </li>
               </ul>
             </div>

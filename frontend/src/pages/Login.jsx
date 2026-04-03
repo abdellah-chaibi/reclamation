@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import logo from './../assets/Logo.png';
+import { useSiteSettings } from '../context/SiteSettingsContext';
+import SiteLogo from '../components/SiteLogo';
 import { Mail, Lock, LogIn, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 
 const ROLE_REDIRECT = {
@@ -15,6 +16,7 @@ const ROLE_REDIRECT = {
 export default function Login() {
   const { t } = useTranslation();
   const { login } = useAuth();
+  const { settings } = useSiteSettings();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
@@ -47,9 +49,9 @@ export default function Login() {
 
       <div className="relative w-full max-w-[440px] z-10">
         <div className="flex flex-col items-center mb-8">
-          <img src={logo} alt="Logo" className="h-12 w-auto mb-6" />
+          <SiteLogo src={settings.logo_url} alt={settings.municipality_name} className="h-12 w-auto mb-6" />
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{t('auth.login.title')}</h1>
-          <p className="text-slate-500 mt-2 font-medium">{t('auth.login.subtitle')}</p>
+          <p className="text-slate-500 mt-2 font-medium">{settings.municipality_name || t('auth.login.subtitle')}</p>
         </div>
 
         <div className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-3xl p-8 shadow-2xl shadow-slate-200/50">

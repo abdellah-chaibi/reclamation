@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import logo from './../assets/Logo.png';
+import { useSiteSettings } from '../context/SiteSettingsContext';
+import SiteLogo from '../components/SiteLogo';
 import { User, Mail, Lock, UserPlus, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 
 function Field({ name, label, type = 'text', placeholder, value, onChange, error, icon: Icon }) {
@@ -34,6 +35,7 @@ function Field({ name, label, type = 'text', placeholder, value, onChange, error
 export default function Register() {
   const { t } = useTranslation();
   const { register } = useAuth();
+  const { settings } = useSiteSettings();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', password_confirmation: '' });
   const [errors, setErrors] = useState({});
@@ -86,7 +88,7 @@ export default function Register() {
             <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-semibold text-slate-600">{t('auth.register.back')}</span>
           </Link>
-          <img src={logo} alt="Logo" className="h-10 w-auto" />
+          <SiteLogo src={settings.logo_url} alt={settings.municipality_name} className="h-10 w-auto" />
         </div>
 
         <div className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-3xl p-8 shadow-2xl shadow-slate-200/50">
@@ -124,7 +126,7 @@ export default function Register() {
           </div>
         </div>
 
-        <p className="text-center mt-8 text-xs text-slate-400 font-semibold uppercase tracking-widest">{t('auth.register.commune')}</p>
+        <p className="text-center mt-8 text-xs text-slate-400 font-semibold uppercase tracking-widest">{settings.municipality_name || t('auth.register.commune')}</p>
       </div>
     </div>
   );

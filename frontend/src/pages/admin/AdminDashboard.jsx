@@ -8,6 +8,7 @@ import AdminDepartements from './AdminDepartements';
 import AdminReclamations from './AdminReclamations';
 import AdminEmployees from './AdminEmployees';
 import AdminReclamationDetails from './AdminReclamationDetails';
+import AdminSiteSettings from './AdminSiteSettings';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { getCurrentLanguage, getLocalizedText } from '../../utils/localization';
 import {
@@ -17,6 +18,7 @@ import {
   FileText,
   ChevronRight,
   ShieldCheck,
+  Landmark,
 } from 'lucide-react';
 
 function extractCollectionCount(payload) {
@@ -39,6 +41,7 @@ export default function AdminDashboard() {
     { to: '/admin/departements', label: getLocalizedText({ ar: 'الأقسام', fr: 'Departements' }, language), icon: Building2 },
     { to: '/admin/employees', label: getLocalizedText({ ar: 'الموظفون', fr: 'Employes' }, language), icon: Briefcase },
     { to: '/admin/reclamations', label: getLocalizedText({ ar: 'الشكايات', fr: 'Reclamations' }, language), icon: FileText },
+    { to: '/admin/site-settings', label: getLocalizedText({ ar: 'إعدادات البلدية', fr: 'Municipalite' }, language), icon: Landmark },
   ];
 
   const title = getLocalizedText({ ar: 'لوحة الإدارة', fr: "Panneau d'administration" }, language);
@@ -61,10 +64,10 @@ export default function AdminDashboard() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 md:flex-row">
       {!isDashboard && (
-        <aside className="hidden md:flex w-72 flex-col bg-white border-r border-slate-200 sticky top-0 h-screen">
+        <aside className="sticky top-0 hidden h-screen w-72 flex-col border-r border-slate-200 bg-white md:flex">
           <div className="p-8">
-            <div className="flex items-center gap-3 px-2 mb-10">
-              <div className="bg-blue-600 p-2 rounded-xl">
+            <div className="mb-10 flex items-center gap-3 px-2">
+              <div className="rounded-xl bg-blue-600 p-2">
                 <ShieldCheck className="text-white" size={24} />
               </div>
               <span className="text-xl font-black tracking-tight text-slate-900">{title}</span>
@@ -75,7 +78,7 @@ export default function AdminDashboard() {
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  className={({ isActive }) => `flex items-center justify-between px-4 py-3.5 rounded-2xl font-bold transition-all group ${
+                  className={({ isActive }) => `group flex items-center justify-between rounded-2xl px-4 py-3.5 font-bold transition-all ${
                     isActive
                       ? 'bg-blue-50 text-blue-600 shadow-sm shadow-blue-100'
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -85,7 +88,7 @@ export default function AdminDashboard() {
                     <item.icon size={20} className="transition-transform group-hover:scale-110" />
                     <span className="text-sm">{item.label}</span>
                   </div>
-                  <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ChevronRight size={14} className="opacity-0 transition-opacity group-hover:opacity-100" />
                 </NavLink>
               ))}
             </nav>
@@ -111,7 +114,7 @@ export default function AdminDashboard() {
       )}
 
       <main className="flex-1 px-3 py-4 pb-24 sm:px-4 md:p-10 md:pb-10">
-        <div className="max-w-7xl mx-auto">
+        <div className="mx-auto max-w-7xl">
           {loading ? (
             <div className="flex h-[60vh] items-center justify-center">
               <LoadingSpinner />
@@ -126,6 +129,7 @@ export default function AdminDashboard() {
                 <Route path="employees" element={<AdminEmployees />} />
                 <Route path="reclamations" element={<AdminReclamations />} />
                 <Route path="reclamations/:id" element={<AdminReclamationDetails />} />
+                <Route path="site-settings" element={<AdminSiteSettings />} />
                 <Route path="*" element={<Navigate to="/admin/users" replace />} />
               </Routes>
             </div>

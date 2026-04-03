@@ -2,13 +2,15 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, Send, ShieldCheck, Zap, LogIn, ArrowRight } from 'lucide-react';
-import logo from './../assets/Logo.png';
 import './../App.css';
 import Footer from '../components/Footer';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import SiteLogo from '../components/SiteLogo';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 
 export default function Welcome() {
   const { t } = useTranslation();
+  const { settings } = useSiteSettings();
 
   return (
     <div className="welcome-shell">
@@ -19,10 +21,10 @@ export default function Welcome() {
       <nav className="welcome-nav">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Logo" className="h-10 w-auto" />
+            <SiteLogo src={settings.logo_url} alt={settings.municipality_name} className="h-10 w-auto" />
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{t('welcome.official')}</span>
-              <span className="text-lg font-extrabold text-slate-900">{t('common.siteName')}</span>
+              <span className="text-lg font-extrabold text-slate-900">{settings.municipality_name || t('common.siteName')}</span>
             </div>
           </div>
           <div className="hidden items-center gap-3 sm:flex">
