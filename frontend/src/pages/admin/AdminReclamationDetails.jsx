@@ -18,6 +18,7 @@ import {
   User,
 } from 'lucide-react';
 import { reclamationService, userService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import StatusBadge from '../../components/StatusBadge';
 import {
@@ -36,27 +37,27 @@ function InfoCard({ icon: Icon, label, value, tone = 'slate' }) {
   };
 
   return (
-    <div className={`rounded-3xl border p-5 ${toneClasses[tone] || toneClasses.slate}`}>
+    <div className={`rounded-3xl border p-4 sm:p-5 ${toneClasses[tone] || toneClasses.slate}`}>
       <div className="mb-3 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em]">
         <Icon size={14} />
         {label}
       </div>
-      <div className="text-sm font-semibold leading-relaxed">{value || '-'}</div>
+      <div className="break-words text-sm font-semibold leading-relaxed">{value || '-'}</div>
     </div>
   );
 }
 
 function SectionCard({ icon: Icon, title, children, aside }) {
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-      <div className="mb-6 flex items-start justify-between gap-4">
+    <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 md:p-8">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
+          <div className="rounded-2xl bg-blue-50 p-2.5 text-blue-600 sm:p-3">
             <Icon size={20} />
           </div>
-          <h2 className="text-xl font-black text-slate-900">{title}</h2>
+          <h2 className="text-lg font-black text-slate-900 sm:text-xl">{title}</h2>
         </div>
-        {aside}
+        {aside ? <div className="max-w-full self-start">{aside}</div> : null}
       </div>
       {children}
     </section>
@@ -86,15 +87,15 @@ function TimelineStep({ icon: Icon, title, subtitle, date, active = false, done 
   const palette = tones[tone] || tones.slate;
 
   return (
-    <div className="relative flex gap-4">
-      <div className="relative flex w-12 shrink-0 justify-center">
+    <div className="relative flex gap-3 sm:gap-4">
+      <div className="relative flex w-10 shrink-0 justify-center sm:w-12">
         {!last && <div className={`absolute top-12 h-[calc(100%-1rem)] w-px ${palette.line}`} />}
-        <div className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-2xl border ${palette.chip} ${active ? 'ring-4 ring-blue-100' : ''}`}>
+        <div className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-2xl border ${palette.chip} ${active ? 'ring-4 ring-blue-100' : ''} sm:h-12 sm:w-12`}>
           <Icon size={18} />
         </div>
       </div>
 
-      <div className={`flex-1 rounded-3xl border p-5 ${palette.chip}`}>
+      <div className={`min-w-0 flex-1 rounded-3xl border p-4 sm:p-5 ${palette.chip}`}>
         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div>
             <h3 className="text-sm font-black uppercase tracking-[0.14em]">{title}</h3>
@@ -124,12 +125,14 @@ function formatDateTime(value, language) {
 export default function AdminReclamationDetails() {
   const { id } = useParams();
   const { i18n } = useTranslation();
+  const { user } = useAuth();
   const [reclamation, setReclamation] = useState(null);
   const [assignedEmployeeName, setAssignedEmployeeName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const language = getCurrentLanguage(i18n.language);
+  const backPath = user?.role === 'chef_dep' ? '/chef/reclamations' : '/admin/reclamations';
   const text = useMemo(() => ({
     back: getLocalizedText({ ar: 'الرجوع إلى الشكايات', fr: 'Retour aux reclamations' }, language),
     title: getLocalizedText({ ar: 'تفاصيل تتبع الشكاية', fr: 'Details du suivi de la reclamation' }, language),
@@ -348,7 +351,7 @@ export default function AdminReclamationDetails() {
     return (
       <div className="space-y-6">
         <Link
-          to="/admin/reclamations"
+          to={backPath}
           className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600"
         >
           <ArrowLeft size={16} />
@@ -366,11 +369,12 @@ export default function AdminReclamationDetails() {
   }
 
   return (
-    <div className="animate-in fade-in duration-500 space-y-8 pb-10">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="mx-auto max-w-6xl animate-in fade-in px-1 pb-10 duration-500 lg:px-2">
+      <div className="mb-6 rounded-[2rem] border border-slate-200/80 bg-white/90 px-4 py-5 shadow-sm sm:px-6 sm:py-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-2">
           <Link
-            to="/admin/reclamations"
+            to={backPath}
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600"
           >
             <ArrowLeft size={16} />
@@ -378,22 +382,25 @@ export default function AdminReclamationDetails() {
           </Link>
 
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900">{text.title}</h1>
+            <h1 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">{text.title}</h1>
             <p className="text-sm font-medium text-slate-500">{text.subtitle}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:self-start lg:self-auto">
           <div className="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
             <p className="mb-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{text.reclamationId}</p>
             <p className="text-lg font-black text-slate-900">#{reclamation.id}</p>
           </div>
-          <StatusBadge status={reclamation.status} />
+          <div className="self-start">
+            <StatusBadge status={reclamation.status} />
+          </div>
         </div>
       </div>
+      </div>
 
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <section className="space-y-6">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.9fr)]">
+        <section className="space-y-5">
           <SectionCard
             icon={FileText}
             title={text.reclamationInfo}
@@ -408,8 +415,8 @@ export default function AdminReclamationDetails() {
 
               <div>
                 <p className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{text.description}</p>
-                <h3 className="mb-3 text-2xl font-black text-slate-900">{reclamation.title}</h3>
-                <p className="text-sm leading-7 text-slate-600">{reclamation.content || text.unavailable}</p>
+                <h3 className="mb-3 text-xl font-black text-slate-900 sm:text-2xl">{reclamation.title}</h3>
+                <p className="text-sm leading-6 text-slate-600">{reclamation.content || text.unavailable}</p>
               </div>
 
               {reclamation.refusal_reason && (
@@ -427,7 +434,7 @@ export default function AdminReclamationDetails() {
           <SectionCard
             icon={Route}
             title={text.history}
-            aside={<p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">{text.currentStage}: {stageLabel}</p>}
+            aside={<p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">{text.currentStage}: <span className="text-slate-600">{stageLabel}</span></p>}
           >
             <div className="mb-6 grid gap-4 md:grid-cols-2">
               <InfoCard icon={Route} label={text.currentStage} value={stageLabel} tone="blue" />
@@ -439,7 +446,7 @@ export default function AdminReclamationDetails() {
               <p className="text-sm font-medium text-slate-500">{text.historySubtitle}</p>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-4">
               {timeline.map((step, index) => (
                 <TimelineStep
                   key={step.title}
@@ -457,7 +464,6 @@ export default function AdminReclamationDetails() {
           </SectionCard>
 
           <SectionCard icon={Paperclip} title={text.attachedMedia}>
-
             {reclamation.medias?.length ? (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {reclamation.medias.map((media) => {
@@ -493,7 +499,7 @@ export default function AdminReclamationDetails() {
           </SectionCard>
         </section>
 
-        <aside className="space-y-6">
+        <aside className="space-y-5">
           <SectionCard icon={User} title={text.citizenInfo}>
             <div className="grid gap-4">
               <InfoCard icon={User} label={text.citizen} value={citizen?.name || text.unavailable} />

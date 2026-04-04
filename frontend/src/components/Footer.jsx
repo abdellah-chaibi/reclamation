@@ -39,7 +39,11 @@ export default function Footer() {
               <ul className="space-y-4 text-sm text-slate-600">
                 <li className="flex items-start gap-3">
                   <MapPin size={20} className="mt-0.5 shrink-0 text-sky-600" />
-                  <span>{t('footer.addressLine1')}<br />{t('footer.addressLine2')}</span>
+                  <span>
+                    {settings.address_line_1 || t('footer.addressLine1')}
+                    <br />
+                    {settings.address_line_2 || t('footer.addressLine2')}
+                  </span>
                 </li>
                 <li className="flex items-center gap-3">
                   <Phone size={18} className="shrink-0 text-sky-600" />
@@ -54,9 +58,11 @@ export default function Footer() {
 
             <div className="rounded-3xl border border-slate-200/80 bg-slate-50/80 p-6">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-700">{t('footer.location')}</p>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{t('footer.addressLine1')} {t('footer.addressLine2')}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                {settings.address_line_1 || t('footer.addressLine1')} {settings.address_line_2 || t('footer.addressLine2')}
+              </p>
               <a
-                href="https://maps.google.com/?q=Commune+Kasbah+Tadla"
+                href={settings.maps_url || 'https://maps.google.com/'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-4 inline-flex items-center gap-2 rounded-full bg-sky-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sky-200 transition-all hover:-translate-y-0.5 hover:bg-sky-700"

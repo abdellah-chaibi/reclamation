@@ -14,6 +14,9 @@ class SiteSettingController extends Controller
             'municipality_name' => 'Commune du Maroc',
             'email' => 'contact@commune.ma',
             'phone' => '+212 5 00 00 00 00',
+            'address_line_1' => 'Rue Mohamed V, Hay Al Idari',
+            'address_line_2' => 'Commune du Maroc',
+            'maps_url' => 'https://maps.google.com/',
             'logo_path' => null,
         ];
     }
@@ -40,6 +43,9 @@ class SiteSettingController extends Controller
             'municipality_name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:30',
+            'address_line_1' => 'required|string|max:255',
+            'address_line_2' => 'nullable|string|max:255',
+            'maps_url' => 'nullable|url|max:2048',
             'logo' => 'nullable|image|max:2048',
         ]);
 

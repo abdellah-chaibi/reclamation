@@ -222,21 +222,28 @@ export default function AdminReclamations() {
     users.filter((user) => user.role === 'employe' && String(user.departement_id) === String(departmentId))
   );
 
+  const startEditing = (reclamation) => {
+    setEditId(reclamation.id);
+    setEditDept(String(reclamation.departement_id || ''));
+    setEditEmployee(String(reclamation.assigned_to || ''));
+  };
+
   return (
-    <div className="animate-in fade-in duration-500 pb-10">
-      <div className="mb-8 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+    <div className="mx-auto max-w-6xl animate-in fade-in px-1 pb-10 duration-500 lg:px-2">
+      <div className="mb-6 rounded-[2rem] border border-slate-200/80 bg-white/90 px-4 py-5 shadow-sm sm:px-6 sm:py-6">
+        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
         <div>
-          <h2 className="flex items-center gap-3 text-2xl font-black tracking-tight text-slate-900">
-            <ClipboardList className="text-blue-600" size={28} />
+          <h2 className="flex items-center gap-3 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+            <ClipboardList className="text-blue-600" size={24} />
             {text.title}
           </h2>
-          <p className="text-sm font-medium text-slate-500">{text.subtitle}</p>
+          <p className="mt-1 text-sm font-medium text-slate-500">{text.subtitle}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+        <div className="w-full lg:w-auto">
+          <div className="flex w-full flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2 sm:flex-row sm:items-center lg:w-auto">
             <select
-              className="border-r border-slate-100 bg-transparent px-3 py-1.5 text-xs font-bold text-slate-600 outline-none"
+              className="w-full rounded-xl bg-transparent px-3 py-2 text-xs font-bold text-slate-600 outline-none sm:min-w-[180px] sm:border-r sm:border-slate-100 sm:rounded-none sm:py-1.5"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             >
@@ -249,7 +256,7 @@ export default function AdminReclamations() {
             </select>
 
             <select
-              className="bg-transparent px-3 py-1.5 text-xs font-bold text-slate-600 outline-none"
+              className="w-full rounded-xl bg-transparent px-3 py-2 text-xs font-bold text-slate-600 outline-none sm:min-w-[210px] sm:rounded-none sm:py-1.5"
               value={deptFilter}
               onChange={(e) => setDeptFilter(e.target.value)}
             >
@@ -263,6 +270,7 @@ export default function AdminReclamations() {
           </div>
         </div>
       </div>
+      </div>
 
       {error && (
         <div className="animate-in slide-in-from-top-4 mb-6 flex items-center gap-3 rounded-r-xl border-l-4 border-red-500 bg-red-50 p-4 font-bold text-red-700">
@@ -271,33 +279,170 @@ export default function AdminReclamations() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
         {loading ? (
           <div className="flex justify-center py-20">
             <LoadingSpinner />
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="px-6 py-20 text-center italic text-slate-400">
+            {text.empty}
+          </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/80">
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">ID</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{text.complaint}</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{text.requesterDepartment}</th>
-                  <th className="px-6 py-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">{text.status}</th>
-                  <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">{text.actions}</th>
-                </tr>
-              </thead>
+          <>
+            <div className="divide-y divide-slate-100 md:hidden">
+              {currentItems.map((reclamation) => {
+                const canAssign = reclamation.status === 'en_attent';
+                const citoyenName = getCitoyenName(reclamation);
+                const assignedDepartment = depts.find((department) => department.id === reclamation.departement_id);
+                const availableEmployees = getDepartmentEmployees(editId === reclamation.id ? editDept : reclamation.departement_id);
+                const assignedEmployeeName = reclamation.assigned_employee?.name || text.unassigned;
 
-              <tbody className="divide-y divide-slate-50">
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-20 text-center italic text-slate-400">
-                      {text.empty}
-                    </td>
+                return (
+                  <article key={reclamation.id} className="space-y-4 p-4 sm:p-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">#{reclamation.id}</p>
+                        <h3 className="mt-1 break-words text-base font-black text-slate-900">{reclamation.title}</h3>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-medium uppercase text-slate-400">
+                          <span className="inline-flex items-center gap-1">
+                            <Calendar size={12} />
+                            {formatLocalizedDate(reclamation.created_at, language)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="self-start">
+                        <StatusBadge status={reclamation.status} />
+                      </div>
+                    </div>
+
+                    {reclamation.refusal_reason && (
+                      <p className="rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-600">
+                        {reclamation.refusal_reason}
+                      </p>
+                    )}
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl bg-slate-50 p-3">
+                        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{text.requesterDepartment}</p>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                            <User size={14} className="text-slate-400" />
+                            <span className="break-words">{citoyenName}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <Building2 size={14} className="text-slate-400" />
+                            <span className="break-words">{translateDepartmentName(assignedDepartment?.name, language) || text.unassigned}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <User size={14} className="text-slate-400" />
+                            <span className="break-words">{assignedEmployeeName}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl bg-slate-50 p-3">
+                        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{text.actions}</p>
+                        {editId === reclamation.id && canAssign ? (
+                          <div className="space-y-2">
+                            <select
+                              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-400"
+                              value={editDept}
+                              onChange={(e) => {
+                                setEditDept(e.target.value);
+                                setEditEmployee('');
+                              }}
+                            >
+                              <option value="">{text.assignPlaceholder}</option>
+                              {depts.map((department) => (
+                                <option key={department.id} value={department.id}>
+                                  {translateDepartmentName(department.name, language)}
+                                </option>
+                              ))}
+                            </select>
+
+                            {!isChefDep && (
+                              <select
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-400"
+                                value={editEmployee}
+                                onChange={(e) => setEditEmployee(e.target.value)}
+                                disabled={!editDept}
+                              >
+                                <option value="">{text.employeePlaceholder}</option>
+                                {availableEmployees.map((employee) => (
+                                  <option key={employee.id} value={employee.id}>
+                                    {employee.name}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+
+                            <div className="flex gap-2">
+                              <button
+                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-blue-700"
+                                onClick={() => handleAssign(reclamation.id)}
+                                disabled={saving}
+                              >
+                                {saving ? <RefreshCw className="animate-spin" size={14} /> : <Check size={14} />}
+                                {text.assignAction}
+                              </button>
+
+                              <button
+                                className="flex items-center justify-center rounded-xl bg-slate-200 px-4 py-2 text-slate-600 transition-colors hover:bg-slate-300"
+                                onClick={() => setEditId(null)}
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            <Link
+                              to={`${detailsBasePath}/${reclamation.id}`}
+                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50"
+                            >
+                              <Eye size={14} />
+                              {text.detailsAction}
+                            </Link>
+
+                            <button
+                              className={`rounded-xl border px-4 py-2 text-xs font-black uppercase tracking-wider transition-all ${
+                                canAssign
+                                  ? 'border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white'
+                                  : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+                              }`}
+                              onClick={() => {
+                                if (!canAssign) return;
+                                startEditing(reclamation);
+                              }}
+                              disabled={!canAssign}
+                            >
+                              {text.assignAction}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/80">
+                    <th className="px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400">ID</th>
+                    <th className="px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400">{text.complaint}</th>
+                    <th className="px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400">{text.requesterDepartment}</th>
+                    <th className="px-5 py-3.5 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">{text.status}</th>
+                    <th className="px-5 py-3.5 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">{text.actions}</th>
                   </tr>
-                ) : (
-                  currentItems.map((reclamation) => {
+                </thead>
+
+                <tbody className="divide-y divide-slate-50">
+                  {currentItems.map((reclamation) => {
                     const canAssign = reclamation.status === 'en_attent';
                     const citoyenName = getCitoyenName(reclamation);
                     const assignedDepartment = depts.find((department) => department.id === reclamation.departement_id);
@@ -306,10 +451,10 @@ export default function AdminReclamations() {
 
                     return (
                       <tr key={reclamation.id} className="transition-colors hover:bg-slate-50/30">
-                        <td className="px-6 py-4 text-xs font-bold text-slate-400">#{reclamation.id}</td>
+                        <td className="px-5 py-3.5 text-xs font-bold text-slate-400">#{reclamation.id}</td>
 
-                        <td className="px-6 py-4">
-                          <div className="max-w-xs sm:max-w-md">
+                        <td className="px-5 py-3.5">
+                          <div className="max-w-[260px] lg:max-w-sm">
                             <p className="mb-1 truncate text-sm font-bold text-slate-900">{reclamation.title}</p>
                             <div className="flex items-center gap-2 text-[10px] font-medium uppercase text-slate-400">
                               <Calendar size={12} />
@@ -321,7 +466,7 @@ export default function AdminReclamations() {
                           </div>
                         </td>
 
-                        <td className="px-6 py-4">
+                        <td className="px-5 py-3.5">
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
                                 <User size={12} className="text-slate-300" />
@@ -338,11 +483,11 @@ export default function AdminReclamations() {
                             </div>
                           </td>
 
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-5 py-3.5 text-center">
                           <StatusBadge status={reclamation.status} />
                         </td>
 
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-5 py-3.5 text-right">
                           {editId === reclamation.id && canAssign ? (
                             <div className="animate-in zoom-in-95 flex items-center justify-end gap-1 duration-200">
                               <select
@@ -410,9 +555,7 @@ export default function AdminReclamations() {
                                 }`}
                                 onClick={() => {
                                   if (!canAssign) return;
-                                  setEditId(reclamation.id);
-                                  setEditDept(String(reclamation.departement_id || ''));
-                                  setEditEmployee(String(reclamation.assigned_to || ''));
+                                  startEditing(reclamation);
                                 }}
                                 disabled={!canAssign}
                               >
@@ -423,11 +566,11 @@ export default function AdminReclamations() {
                         </td>
                       </tr>
                     );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

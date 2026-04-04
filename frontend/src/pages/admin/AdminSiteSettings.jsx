@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, Building2, CheckCircle, ImagePlus, Loader2, Mail, Phone } from 'lucide-react';
+import { AlertCircle, Building2, CheckCircle, ImagePlus, Loader2, LocateFixed, Mail, MapPin, Phone } from 'lucide-react';
 import { siteSettingsService } from '../../services/api';
 import { getCurrentLanguage, getLocalizedText } from '../../utils/localization';
 import { useSiteSettings } from '../../context/SiteSettingsContext';
@@ -14,10 +14,14 @@ export default function AdminSiteSettings() {
     municipality_name: '',
     email: '',
     phone: '',
+    address_line_1: '',
+    address_line_2: '',
+    maps_url: '',
     logo: null,
   });
   const [preview, setPreview] = useState('');
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
@@ -27,6 +31,12 @@ export default function AdminSiteSettings() {
     municipality: getLocalizedText({ ar: 'اسم البلدية', fr: 'Nom de la municipalite' }, language),
     email: getLocalizedText({ ar: 'البريد الإلكتروني', fr: 'Email' }, language),
     phone: getLocalizedText({ ar: 'رقم الهاتف', fr: 'Telephone' }, language),
+    locateMunicipality: getLocalizedText({ ar: 'تحديد البلدية تلقائيا', fr: 'Localiser la municipalite' }, language),
+    locating: getLocalizedText({ ar: 'جاري تحديد الموقع...', fr: 'Localisation...' }, language),
+    locationHint: getLocalizedText({ ar: 'كتب غير اسم البلدية ومن بعد استعمل هاد الزر باش يتعمر العنوان والخريطة تلقائيا.', fr: 'Saisissez seulement le nom de la municipalite puis utilisez ce bouton pour remplir automatiquement l adresse et la carte.' }, language),
+    municipalityRequiredForLocation: getLocalizedText({ ar: 'كتب اسم البلدية أولا.', fr: 'Saisissez d abord le nom de la municipalite.' }, language),
+    locationFailed: getLocalizedText({ ar: 'ما قدرناش نحددو موقع هاد البلدية. جرب اسم أوضح.', fr: 'Impossible de localiser cette municipalite. Essayez un nom plus precis.' }, language),
+    locationReady: getLocalizedText({ ar: 'تم تحديد العنوان والخريطة تلقائيا.', fr: 'Adresse et carte detectees automatiquement.' }, language),
     logo: getLocalizedText({ ar: 'شعار البلدية', fr: 'Logo municipal' }, language),
     save: getLocalizedText({ ar: 'حفظ التغييرات', fr: 'Enregistrer' }, language),
     saving: getLocalizedText({ ar: 'جاري الحفظ...', fr: 'Enregistrement...' }, language),
@@ -41,6 +51,9 @@ export default function AdminSiteSettings() {
       municipality_name: settings.municipality_name || '',
       email: settings.email || '',
       phone: settings.phone || '',
+      address_line_1: settings.address_line_1 || '',
+      address_line_2: settings.address_line_2 || '',
+      maps_url: settings.maps_url || '',
       logo: null,
     });
     setPreview(settings.logo_url || '');
@@ -75,6 +88,74 @@ export default function AdminSiteSettings() {
     }
   };
 
+  const normalizeQuery = (value) =>
+    value
+      .replace(/commune|municipalit[eé]|municipality/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const searchMunicipality = async (query) => {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=1&countrycodes=ma&q=${encodeURIComponent(query)}`,
+      {
+        headers: {
+          Accept: 'application/json',
+        },
+      }
+    );
+
+    const results = await response.json();
+    return Array.isArray(results) ? results[0] : null;
+  };
+
+  const applyMatch = (match, fallback) => {
+    const address = match.address || {};
+    const addressLine1 = [address.road, address.suburb || address.neighbourhood].filter(Boolean).join(', ');
+    const addressLine2 = [
+      address.city || address.town || address.village || address.municipality || fallback,
+      address.state || address.region,
+    ].filter(Boolean).join(', ');
+
+    setForm((current) => ({
+      ...current,
+      address_line_1: addressLine1 || current.address_line_1 || fallback,
+      address_line_2: addressLine2 || current.address_line_2 || 'Maroc',
+      maps_url: `https://www.google.com/maps/search/?api=1&query=${match.lat},${match.lon}`,
+    }));
+    setSuccess(text.locationReady);
+  };
+
+  const handleLocateMunicipality = async () => {
+    const rawQuery = form.municipality_name.trim();
+
+    if (!rawQuery) {
+      setError(text.municipalityRequiredForLocation);
+      return;
+    }
+
+    setLocationLoading(true);
+    setSuccess('');
+    setError('');
+
+    try {
+      let match = await searchMunicipality(rawQuery);
+      if (!match) {
+        const cleaned = normalizeQuery(rawQuery) || rawQuery;
+        match = await searchMunicipality(cleaned);
+        if (!match) {
+          throw new Error('municipality_not_found');
+        }
+        applyMatch(match, cleaned);
+      } else {
+        applyMatch(match, rawQuery);
+      }
+    } catch (_) {
+      setError(text.locationFailed);
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
@@ -85,6 +166,9 @@ export default function AdminSiteSettings() {
     payload.append('municipality_name', form.municipality_name);
     payload.append('email', form.email);
     payload.append('phone', form.phone);
+    payload.append('address_line_1', form.address_line_1);
+    payload.append('address_line_2', form.address_line_2);
+    payload.append('maps_url', form.maps_url);
 
     if (form.logo) {
       payload.append('logo', form.logo);
@@ -131,6 +215,30 @@ export default function AdminSiteSettings() {
               value={form.municipality_name}
               onChange={handleChange}
             />
+
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4">
+              <p className="text-sm font-semibold leading-6 text-emerald-800">{text.locationHint}</p>
+              <button
+                type="button"
+                onClick={handleLocateMunicipality}
+                disabled={locationLoading || loading}
+                className="mt-3 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-md shadow-emerald-100 transition hover:bg-emerald-700 disabled:bg-slate-400"
+              >
+                {locationLoading ? <Loader2 size={18} className="animate-spin" /> : <LocateFixed size={18} />}
+                {locationLoading ? text.locating : text.locateMunicipality}
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="flex items-start gap-3">
+                <MapPin className="mt-0.5 text-slate-400" size={18} />
+                <div className="text-sm">
+                  <p className="font-bold text-slate-700">{form.address_line_1 || settings.address_line_1 || form.municipality_name}</p>
+                  <p className="mt-1 text-slate-500">{form.address_line_2 || settings.address_line_2 || 'Maroc'}</p>
+                </div>
+              </div>
+            </div>
+
             <Field
               icon={Mail}
               label={text.email}
@@ -184,6 +292,8 @@ export default function AdminSiteSettings() {
                 <p className="text-lg font-black text-slate-900">{form.municipality_name || settings.municipality_name}</p>
                 <p className="mt-1 text-sm font-medium text-slate-500">{form.email || settings.email}</p>
                 <p className="text-sm font-medium text-slate-500">{form.phone || settings.phone}</p>
+                <p className="mt-2 text-sm font-medium text-slate-500">{form.address_line_1 || settings.address_line_1}</p>
+                <p className="text-sm font-medium text-slate-500">{form.address_line_2 || settings.address_line_2}</p>
               </div>
             </div>
           </div>
@@ -193,7 +303,7 @@ export default function AdminSiteSettings() {
   );
 }
 
-function Field({ icon: Icon, label, name, type = 'text', value, onChange }) {
+function Field({ icon: Icon, label, name, type = 'text', value, onChange, required = true }) {
   return (
     <div className="space-y-1.5">
       <label htmlFor={name} className="ml-1 text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</label>
@@ -205,7 +315,7 @@ function Field({ icon: Icon, label, name, type = 'text', value, onChange }) {
           type={type}
           value={value}
           onChange={onChange}
-          required
+          required={required}
           className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-blue-400"
         />
       </div>

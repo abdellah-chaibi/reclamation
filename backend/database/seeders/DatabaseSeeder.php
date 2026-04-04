@@ -22,6 +22,9 @@ class DatabaseSeeder extends Seeder
             'municipality_name' => 'Commune Territoriale Kasba Tadla',
             'email' => 'contact@commune.ma',
             'phone' => '+212 5 23 00 00 00',
+            'address_line_1' => 'Rue Mohamed V, Hay Al Idari',
+            'address_line_2' => 'Kasbah Tadla, Beni Mellal',
+            'maps_url' => 'https://maps.google.com/?q=Commune+Kasbah+Tadla',
             'logo_path' => null,
         ]);
 

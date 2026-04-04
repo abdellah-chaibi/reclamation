@@ -7,6 +7,9 @@ const fallbackSettings = {
   municipality_name: 'Commune Territoriale',
   email: 'contact@commune.ma',
   phone: '+212 5 00 00 00 00',
+  address_line_1: 'Rue Mohamed V, Hay Al Idari',
+  address_line_2: 'Commune du Maroc',
+  maps_url: 'https://maps.google.com/',
   logo_url: null,
 };
 

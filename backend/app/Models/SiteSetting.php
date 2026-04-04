@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class SiteSetting extends Model
 {
@@ -11,6 +12,9 @@ class SiteSetting extends Model
         'municipality_name',
         'email',
         'phone',
+        'address_line_1',
+        'address_line_2',
+        'maps_url',
         'logo_path',
     ];
 
@@ -24,6 +28,18 @@ class SiteSetting extends Model
             return null;
         }
 
-        return Storage::disk('public')->url($this->logo_path);
+        $url = Storage::disk('public')->url($this->logo_path);
+
+        if (!request()) {
+            return $url;
+        }
+
+        $origin = request()->getSchemeAndHttpHost();
+
+        if (Str::startsWith($url, ['http://', 'https://'])) {
+            return preg_replace('#^https?://[^/]+#', $origin, $url);
+        }
+
+        return $origin.$url;
     }
 }
